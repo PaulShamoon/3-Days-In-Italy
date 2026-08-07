@@ -1,3 +1,5 @@
+from anthropic.types import Message
+
 from backend.models import (
     BusyLevel,
     BUSY_LEVEL_RANGE,
@@ -16,3 +18,20 @@ def target_count_description(busy_level: BusyLevel) -> str:
     total_min = per_day_min * TRIP_LENGTH_DAYS
     total_max = per_day_max * TRIP_LENGTH_DAYS if per_day_max is not None else None
     return f"{total_min}-{total_max}" if total_max is not None else f"{total_min}+"
+
+
+def extract_tool_input(response: Message, tool_name: str) -> dict:
+    """
+    Pull the input dict off the tool_use block matching tool_name from
+    an Anthropic API response. Every LLM call in this module forces
+    tool_choice to a specific tool, so a missing/mismatched block means
+    something is actually wrong (e.g. hit max_tokens mid-call) — that's
+    raised, not silently worked around.
+    """
+    for block in response.content:
+        if block.type == "tool_use" and block.name == tool_name:
+            return block.input
+
+    raise ValueError(
+        f"Expected a {tool_name!r} tool_use block in the response, got: {response.content}"
+    )
