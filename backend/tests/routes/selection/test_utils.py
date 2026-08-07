@@ -1,5 +1,6 @@
 from backend.routes.selection.utils import (
     match_known_region,
+    match_known_city,
     trim_to_target_max,
     validate_selections,
 )
@@ -32,6 +33,20 @@ class TestMatchKnownRegion:
         regions = ["Trentino", "Trentino-Alto Adige", "Lazio"]
         text = "torn between Trentino-Alto Adige and Lazio"
         assert match_known_region(text, regions) is None
+
+
+class TestMatchKnownCity:
+    KNOWN_CITIES = ["Rome", "Florence", "Siena", "Venice"]
+
+    def test_single_case_insensitive_match(self):
+        assert match_known_city("add the Colosseum in rome", self.KNOWN_CITIES) == "Rome"
+
+    def test_no_match_returns_none(self):
+        assert match_known_city("a relaxing coastal trip", self.KNOWN_CITIES) is None
+
+    def test_multiple_matches_returns_none(self):
+        text = "torn between Rome and Florence"
+        assert match_known_city(text, self.KNOWN_CITIES) is None
 
 
 class TestTrimToTargetMax:

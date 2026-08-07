@@ -20,6 +20,7 @@ from backend.models import (
 )
 from backend.routes.selection.utils import (
     match_known_region,
+    match_known_city,
     trim_to_target_max,
     validate_selections
 )
@@ -117,9 +118,20 @@ async def refine_places(body: RefineRequest, request: Request) -> RefineResponse
     """
     places: list[Place] = request.app.state.places
     known_regions: list[str] = request.app.state.known_regions
+    known_cities: list[str] = request.app.state.known_cities
+    city_to_region: dict[str, str] = request.app.state.city_to_region
 
-    # String-match against literal region names and defer to the LLM unless there is exactly one confident match.
+    # String-match against literal region names first; if that's inconclusive,
+    # also try city names (e.g. "Rome" implies Lazio) — a region-name-only
+    # check would silently miss a city mention naming a different region,
+    # and the lock is meant to be a hard, code-enforced constraint rather
+    # than just an instruction handed to the LLM
     requested_region = match_known_region(body.prompt.text, known_regions)
+    if requested_region is None:
+        matched_city = match_known_city(body.prompt.text, known_cities)
+        if matched_city is not None:
+            requested_region = city_to_region[matched_city]
+
     # If the prompt clearly references a region other than the originally selected region, return and warn user
     if requested_region is not None and requested_region != body.locked_region:
         # NOTE: We don't return any {id, reason} data here because the frontend should ignore it and keep its existing local selection when out_of_region_request is True.

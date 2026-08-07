@@ -21,3 +21,10 @@ class TestLifespan:
             places = client.app.state.places
             known_regions = client.app.state.known_regions
             assert known_regions == sorted({p.region for p in places})
+
+    def test_computes_known_cities_and_city_to_region_once_at_startup(self):
+        with TestClient(main.app) as client:
+            places = client.app.state.places
+            assert client.app.state.known_cities == sorted({p.city for p in places})
+            city_to_region = client.app.state.city_to_region
+            assert all(city_to_region[p.city] == p.region for p in places)
