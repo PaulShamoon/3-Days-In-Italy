@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.models import Place
 from backend.routes.selection.routes import router as selection_router
 from backend.routes.itinerary.routes import router as itinerary_router
+from backend.routes.places.routes import router as places_router
 from backend.preprocessing import fix_encoding_corruption_deep
 
 DATA_PATH = Path(__file__).parent / "data" / "italy.json"
@@ -41,9 +42,10 @@ app.add_middleware(
     CORSMiddleware,
     # TODO: add deployed frontend origin when it's time to host app
     allow_origins=["http://localhost:5173"],
-    allow_methods=["POST"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 app.include_router(selection_router)
 app.include_router(itinerary_router)
+app.include_router(places_router)

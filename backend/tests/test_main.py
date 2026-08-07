@@ -14,7 +14,7 @@ class TestLifespan:
     def test_registers_select_refine_itinerary_routes(self):
         with TestClient(main.app) as client:
             paths = client.get("/openapi.json").json()["paths"]
-            assert set(paths.keys()) == {"/select", "/refine", "/itinerary"}
+            assert set(paths.keys()) == {"/select", "/refine", "/itinerary", "/places"}
 
     def test_computes_known_regions_once_at_startup(self):
         with TestClient(main.app) as client:

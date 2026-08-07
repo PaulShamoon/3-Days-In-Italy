@@ -76,6 +76,17 @@ class PromptText(BaseModel):
     text: str = Field(..., max_length=500, min_length=1)
 
 
+# GET /places
+
+class PlacesResponse(BaseModel):
+    """Response body for GET /places — the full place details for a
+    region. /select and /refine only return {id, reason} pairs, so the
+    frontend fetches this once per locked region and joins locally to
+    render map pins and place cards."""
+
+    places: list[Place]
+
+
 # POST /select
 
 class SelectionRequest(BaseModel):
