@@ -1,52 +1,72 @@
 from backend.routes.selection.utils import (
-    match_known_region,
-    match_known_city,
+    find_single_confident_match,
+    resolve_requested_region,
     trim_to_target_max,
     validate_selections,
 )
 
 
-class TestMatchKnownRegion:
-    KNOWN_REGIONS = ["Tuscany", "Lazio", "Veneto"]
+class TestFindSingleConfidentMatch:
+    """Generic over what the candidate list represents (region, city,
+    place name, ...) — resolve_requested_region is what applies this to
+    each of those specifically."""
+
+    CANDIDATES = ["Tuscany", "Lazio", "Veneto"]
 
     def test_single_case_insensitive_match(self):
-        assert match_known_region("I want to visit tuscany", self.KNOWN_REGIONS) == "Tuscany"
+        assert find_single_confident_match("I want to visit tuscany", self.CANDIDATES) == "Tuscany"
 
     def test_no_match_returns_none(self):
-        assert match_known_region("a relaxing coastal trip", self.KNOWN_REGIONS) is None
+        assert find_single_confident_match("a relaxing coastal trip", self.CANDIDATES) is None
 
     def test_multiple_matches_returns_none(self):
         text = "torn between Tuscany and Lazio"
-        assert match_known_region(text, self.KNOWN_REGIONS) is None
+        assert find_single_confident_match(text, self.CANDIDATES) is None
 
-    def test_city_only_mention_does_not_match(self):
-        # "Rome" isn't a region name, so no code-only match — falls
-        # through to the LLM by design.
-        assert match_known_region("I want to see Rome", self.KNOWN_REGIONS) is None
+    def test_unrelated_mention_does_not_match(self):
+        assert find_single_confident_match("I want to see Rome", self.CANDIDATES) is None
 
-    def test_prefers_longer_region_over_substring_region(self):
-        regions = ["Trentino", "Trentino-Alto Adige", "Lazio"]
+    def test_prefers_longer_candidate_over_substring_candidate(self):
+        candidates = ["Trentino", "Trentino-Alto Adige", "Lazio"]
         text = "a trip through Trentino-Alto Adige"
-        assert match_known_region(text, regions) == "Trentino-Alto Adige"
+        assert find_single_confident_match(text, candidates) == "Trentino-Alto Adige"
 
     def test_still_ambiguous_when_neither_is_a_substring(self):
-        regions = ["Trentino", "Trentino-Alto Adige", "Lazio"]
+        candidates = ["Trentino", "Trentino-Alto Adige", "Lazio"]
         text = "torn between Trentino-Alto Adige and Lazio"
-        assert match_known_region(text, regions) is None
+        assert find_single_confident_match(text, candidates) is None
 
 
-class TestMatchKnownCity:
-    KNOWN_CITIES = ["Rome", "Florence", "Siena", "Venice"]
+class TestResolveRequestedRegion:
+    KNOWN_REGIONS = ["Tuscany", "Lazio"]
+    KNOWN_CITIES = ["Florence", "Rome"]
+    CITY_TO_REGION = {"Florence": "Tuscany", "Rome": "Lazio"}
+    KNOWN_PLACE_NAMES = ["Colosseum", "Uffizi Gallery"]
+    PLACE_NAME_TO_REGION = {"Colosseum": "Lazio", "Uffizi Gallery": "Tuscany"}
 
-    def test_single_case_insensitive_match(self):
-        assert match_known_city("add the Colosseum in rome", self.KNOWN_CITIES) == "Rome"
+    def _resolve(self, text):
+        return resolve_requested_region(
+            text,
+            self.KNOWN_REGIONS,
+            self.KNOWN_CITIES,
+            self.CITY_TO_REGION,
+            self.KNOWN_PLACE_NAMES,
+            self.PLACE_NAME_TO_REGION,
+        )
 
-    def test_no_match_returns_none(self):
-        assert match_known_city("a relaxing coastal trip", self.KNOWN_CITIES) is None
+    def test_region_name_match_wins(self):
+        assert self._resolve("let's switch to Lazio") == "Lazio"
 
-    def test_multiple_matches_returns_none(self):
-        text = "torn between Rome and Florence"
-        assert match_known_city(text, self.KNOWN_CITIES) is None
+    def test_falls_back_to_city_match(self):
+        assert self._resolve("add something in Rome") == "Lazio"
+
+    def test_falls_back_to_place_name_match(self):
+        # Regression: "add the Colosseum" alone (no "Rome") must still
+        # resolve, since a city-only check misses a bare landmark mention.
+        assert self._resolve("add the Colosseum") == "Lazio"
+
+    def test_returns_none_when_nothing_matches(self):
+        assert self._resolve("add a nice dinner spot") is None
 
 
 class TestTrimToTargetMax:

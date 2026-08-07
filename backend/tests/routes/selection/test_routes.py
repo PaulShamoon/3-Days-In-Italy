@@ -160,6 +160,30 @@ class TestRefineRoute:
         assert body["selected"] == []
         mock_refine.assert_not_called()
 
+    def test_out_of_region_request_via_bare_place_name_skips_llm_call(self, make_place):
+        # Regression: "add the Colosseum" alone (no "Rome", no "Lazio")
+        # must still be caught — a city-only check misses a bare
+        # landmark mention.
+        places = [
+            make_place(id="place_001", name="Palazzo Vecchio", region="Tuscany", city="Florence"),
+            make_place(id="place_005", name="Colosseum", region="Lazio", city="Rome"),
+        ]
+
+        with patch("backend.routes.selection.routes.llm_refine_places") as mock_refine:
+            response = _client(places).post("/refine", json={
+                "prompt": {"text": "add the Colosseum"},
+                "locked_region": "Tuscany",
+                "current_place_ids": ["place_001"],
+                "busy_level": "chill",
+            })
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["out_of_region_request"] is True
+        assert body["requested_region"] == "Lazio"
+        assert body["selected"] == []
+        mock_refine.assert_not_called()
+
     def test_city_mention_in_locked_region_does_not_trigger_out_of_region(self, make_place):
         places = [make_place(id="place_001", region="Tuscany", city="Florence")]
         selections = [{"id": "place_001", "reason": "still fits"}]
