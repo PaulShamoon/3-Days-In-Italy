@@ -23,6 +23,16 @@ class TestMatchKnownRegion:
         # through to the LLM by design.
         assert match_known_region("I want to see Rome", self.KNOWN_REGIONS) is None
 
+    def test_prefers_longer_region_over_substring_region(self):
+        regions = ["Trentino", "Trentino-Alto Adige", "Lazio"]
+        text = "a trip through Trentino-Alto Adige"
+        assert match_known_region(text, regions) == "Trentino-Alto Adige"
+
+    def test_still_ambiguous_when_neither_is_a_substring(self):
+        regions = ["Trentino", "Trentino-Alto Adige", "Lazio"]
+        text = "torn between Trentino-Alto Adige and Lazio"
+        assert match_known_region(text, regions) is None
+
 
 class TestTrimToTargetMax:
     def test_under_max_unchanged(self):
@@ -68,3 +78,14 @@ class TestValidateSelections:
         raw = [{"id": "place_999", "reason": "hallucinated"}]
 
         assert validate_selections(raw, id_to_place, "select_places") == []
+
+    def test_drops_duplicate_ids_keeping_first_occurrence(self, make_place):
+        places = [make_place(id="place_001")]
+        id_to_place = {p.id: p for p in places}
+        raw = [
+            {"id": "place_001", "reason": "first reason"},
+            {"id": "place_001", "reason": "second reason"},
+        ]
+
+        result = validate_selections(raw, id_to_place, "select_places")
+        assert result == [{"id": "place_001", "reason": "first reason"}]

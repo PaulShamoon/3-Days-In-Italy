@@ -70,10 +70,18 @@ SELECT_PLACES_TOOL = {
 # Prompt builders
 
 def _place_summary(place: Place) -> dict:
-    """Trimmed place fields sent to the LLM for selection — only what's
+    """
+    Trimmed place fields sent to the LLM for selection — only what's
     useful for matching against a user's request. lat/long, hours,
     seasonal_notes, and booking_required are intentionally omitted here;
-    they matter for map/detail rendering, not for selection."""
+    they matter for map/detail rendering, not for selection.
+
+    Args:
+        place (Place): The place to summarize.
+
+    Returns:
+        dict: A trimmed dict of the place's id, name, type, tags, description, rating, and price_range.
+    """
     return {
         "id": place.id,
         "name": place.name,
@@ -91,6 +99,13 @@ def llm_pick_region(user_prompt: str, available_regions: list[str]) -> str:
     the distinct regions present in the dataset, pick exactly one region.
     Only called when the frontend didn't already resolve a region_hint
     via string-matching.
+
+    Args:
+        user_prompt (str): The traveler's free-text trip request.
+        available_regions (list[str]): The distinct region names present in the dataset to pick from.
+
+    Returns:
+        str: The single region name picked by the LLM.
     """
     system_prompt = (
         "You are choosing a single Italian region for a 3-day trip, based on "
@@ -136,6 +151,14 @@ def llm_select_places(
     matching the request. Returns raw {id, reason} dicts — validation
     against the dataset and count-checking against BUSY_LEVEL_RANGE
     happens in the route handler, not here.
+
+    Args:
+        user_prompt (str): The traveler's free-text trip request.
+        places (list[Place]): The region-filtered places to select from.
+        busy_level (BusyLevel): The trip's chosen pace, used to size the selection target.
+
+    Returns:
+        list[dict]: Raw {id, reason} selections as returned by the LLM.
     """
     system_prompt = (
         "You are selecting places for a traveler's 3-day trip to Italy, from "
@@ -181,6 +204,16 @@ def llm_refine_places(
     Assumes the caller has already checked the prompt doesn't reference
     a different region (see routes.py's out-of-region check) before
     calling this — this function does not re-check that.
+
+    Args:
+        user_prompt (str): The traveler's follow-up request.
+        places (list[Place]): The places available within locked_region.
+        current_place_ids (list[str]): The IDs of the currently selected places.
+        locked_region (str): The region the trip is locked to.
+        busy_level (BusyLevel): The trip's chosen pace, used to size the selection target.
+
+    Returns:
+        list[dict]: Raw {id, reason} selections as returned by the LLM.
     """
     system_prompt = (
         "You are adjusting an existing trip selection based on the "

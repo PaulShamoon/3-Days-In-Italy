@@ -37,9 +37,16 @@ async def select_places(body: SelectionRequest, request: Request) -> SelectionRe
 
     Returns insufficient_matches=True (not an error) if the matched
     places fall short of the busy level's minimum target count.
+
+    Args:
+        body (SelectionRequest): The user's prompt, busy level, and optional region hint.
+        request (Request): The incoming request, used to access the loaded dataset on app.state.
+
+    Returns:
+        SelectionResponse: The resolved region and selected places, with match-count info.
     """
     places: list[Place] = request.app.state.places
-    known_regions = sorted({p.region for p in places})
+    known_regions: list[str] = request.app.state.known_regions
 
     # body.region_hint is only trusted if it's actually one of the dataset's known regions, otherwise treated as no hint at all
     resolved_region: str | None = None
@@ -100,9 +107,16 @@ async def refine_places(body: RefineRequest, request: Request) -> RefineResponse
     If the prompt references a place/area outside the locked region,
     returns out_of_region_request=True (not an error) instead of
     silently ignoring or complying with the request.
+
+    Args:
+        body (RefineRequest): The follow-up prompt, locked region, current place IDs, and busy level.
+        request (Request): The incoming request, used to access the loaded dataset on app.state.
+
+    Returns:
+        RefineResponse: The updated place selection, or an out-of-region flag if the prompt requested a different region.
     """
     places: list[Place] = request.app.state.places
-    known_regions = sorted({p.region for p in places})
+    known_regions: list[str] = request.app.state.known_regions
 
     # String-match against literal region names and defer to the LLM unless there is exactly one confident match.
     requested_region = match_known_region(body.prompt.text, known_regions)
