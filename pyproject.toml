@@ -1,0 +1,13 @@
+[project]
+name = "trip-planner-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "pydantic>=2.0",
+    "uvicorn[standard]",
+    "anthropic",
+]
+
+[tool.uv]
+package = false
