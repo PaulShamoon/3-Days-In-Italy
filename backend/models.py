@@ -33,7 +33,7 @@ class Place(BaseModel):
     rating: float
     tags: list[str] = Field(default_factory=list)
     seasonal_notes: str | None = None
-    booking_required: bool = False
+    booking_required: bool | None = None
 
 
 class BusyLevel(str, Enum):

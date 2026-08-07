@@ -7,6 +7,7 @@ dependencies = [
     "pydantic>=2.0",
     "uvicorn[standard]",
     "anthropic",
+    "haversine>=2.9.0",
 ]
 
 [tool.uv]

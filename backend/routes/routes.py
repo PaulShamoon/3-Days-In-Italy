@@ -4,7 +4,7 @@ from fastapi import (
     Request
 )
 
-from backend.llm import (
+from backend.llm.llm import (
     llm_pick_region,
     llm_select_places,
     llm_refine_places
@@ -18,12 +18,16 @@ from backend.models import (
     RefineResponse,
     ItineraryRequest,
     ItineraryResponse,
+    ItineraryDay,
     BUSY_LEVEL_RANGE,
+    TRIP_LENGTH_DAYS,
 )
 from backend.routes.utils import (
     match_known_region,
     trim_to_target_max,
-    validate_selections
+    validate_selections,
+    nearest_neighbor_tour,
+    split_into_days
 )
 
 # Uses APIRouter so this module has no dependency on main.py
@@ -71,7 +75,11 @@ async def select_places(body: SelectionRequest, request: Request) -> SelectionRe
     )
 
     matched_count = len(validated_selections)
-    target_min, target_max = BUSY_LEVEL_RANGE[body.busy_level]
+
+    # NOTE: busy_level is per day, not per trip
+    per_day_min, per_day_max = BUSY_LEVEL_RANGE[body.busy_level]
+    target_min = per_day_min * TRIP_LENGTH_DAYS
+    target_max = per_day_max * TRIP_LENGTH_DAYS if per_day_max is not None else None
     validated_selections = trim_to_target_max(validated_selections, target_max)
 
     selected = [
@@ -134,7 +142,8 @@ async def refine_places(body: RefineRequest, request: Request) -> RefineResponse
         "refine_places"
     )
 
-    _, target_max = BUSY_LEVEL_RANGE[body.busy_level]
+    _, per_day_max = BUSY_LEVEL_RANGE[body.busy_level]
+    target_max = per_day_max * TRIP_LENGTH_DAYS if per_day_max is not None else None
     validated_selections = trim_to_target_max(validated_selections, target_max)
 
     selected = [
@@ -145,14 +154,15 @@ async def refine_places(body: RefineRequest, request: Request) -> RefineResponse
     return RefineResponse(selected=selected)
 
 
-# TODO: Finish implementation after finalizing what I want the user experience to be here
 @router.post("/itinerary", response_model=ItineraryResponse)
 async def build_itinerary(body: ItineraryRequest, request: Request) -> ItineraryResponse:
     """
     Deterministically build a 3-day itinerary from the approved place
-    IDs — no LLM call. Day-clusters by proximity within the busy level's
-    per-day cap, orders each day by nearest-neighbor, and attaches soft
-    hours-overlap warnings.
+    IDs. Builds a single greedy nearest-neighbor tour
+    across all approved places (anchored at the westernmost place), then
+    slices it into TRIP_LENGTH_DAYS consecutive groups — this both
+    clusters places into days by geographic proximity and leaves each
+    day already ordered by proximity, in one pass.
 
     Raises 400 if place_ids don't meet the busy level's minimum count
     for a 3-day trip (mirrors the frontend's pre-Approve gate, enforced
@@ -165,12 +175,28 @@ async def build_itinerary(body: ItineraryRequest, request: Request) -> Itinerary
     if missing:
         raise HTTPException(status_code=400, detail=f"Unknown place ids: {missing}")
 
-    # TODO: check body.place_ids count against BUSY_LEVEL_RANGE minimum
-    #       for TRIP_LENGTH_DAYS; raise HTTPException(400) if short
+    per_day_min, _ = BUSY_LEVEL_RANGE[body.busy_level]
+    required_minimum = per_day_min * TRIP_LENGTH_DAYS
+    if len(body.place_ids) < required_minimum:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"At least {required_minimum} places are required for a "
+                f"{TRIP_LENGTH_DAYS}-day {body.busy_level.value} trip — "
+                f"got {len(body.place_ids)}."
+            ),
+        )
 
-    # TODO: day-cluster by proximity into TRIP_LENGTH_DAYS groups,
-    #       sized to the busy level's per-day cap
-    # TODO: nearest-neighbor order within each day
-    # TODO: compute ItineraryWarning entries for hours-overlap conflicts
+    selected_places = [id_to_place[pid] for pid in body.place_ids]
+    tour = nearest_neighbor_tour(selected_places)
+    day_groups = split_into_days(tour)
 
-    raise NotImplementedError
+    # TODO: compute ItineraryWarning entries for hours-overlap conflicts —
+    # not yet designed (needs a definition of "conflict" against the
+    # dataset's free-text `hours` field before this can be implemented)
+    days = [
+        ItineraryDay(day_number=day_index + 1, places=day_group, warnings=[])
+        for day_index, day_group in enumerate(day_groups)
+    ]
+
+    return ItineraryResponse(days=days)

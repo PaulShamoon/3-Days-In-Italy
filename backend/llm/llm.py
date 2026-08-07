@@ -4,9 +4,9 @@ import anthropic
 
 from backend.models import (
     BusyLevel,
-    BUSY_LEVEL_RANGE,
     Place
 )
+from backend.llm.utils import target_count_description
 
 # TODO: replace with a real key via .env once Anthropic access is set up.
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "placeholder-key-not-set")
@@ -127,17 +127,12 @@ def llm_select_places(
     against the dataset and count-checking against BUSY_LEVEL_RANGE
     happens in the route handler, not here.
     """
-    target_min, target_max = BUSY_LEVEL_RANGE[busy_level]
-    target_desc = (
-        f"{target_min}-{target_max}" if target_max else f"{target_min}+"
-    )
-
     system_prompt = (
         "You are selecting places for a traveler's 3-day trip to Italy, from "
         "a fixed list of places. Rules:\n"
         "- Only select places from the provided list. Never invent a place "
         "or use an id that isn't in the list.\n"
-        f"- Select approximately {target_desc} places total, matching the "
+        f"- Select approximately {target_count_description(busy_level)} places total, matching the "
         "traveler's stated interests and vibe.\n"
         "- For each selection, write a one-sentence reason explaining why "
         "it fits what the traveler asked for, in plain, natural language."
@@ -178,11 +173,6 @@ def llm_refine_places(
     a different region (see routes.py's out-of-region check) before
     calling this — this function does not re-check that.
     """
-    target_min, target_max = BUSY_LEVEL_RANGE[busy_level]
-    target_desc = (
-        f"{target_min}-{target_max}" if target_max else f"{target_min}+"
-    )
-
     system_prompt = (
         "You are adjusting an existing trip selection based on the "
         "traveler's follow-up request. Rules:\n"
@@ -191,7 +181,7 @@ def llm_refine_places(
         f"- The trip is locked to the {locked_region} region. Every place "
         "you select must be in this region — this is a hard requirement, "
         "not a preference.\n"
-        f"- Aim for approximately {target_desc} places total after applying "
+        f"- Aim for approximately {target_count_description(busy_level)} places total after applying "
         "the traveler's requested changes.\n"
         "- This is an adjustment to an existing selection, not a fresh "
         "start — keep places that still fit unless the traveler's request "

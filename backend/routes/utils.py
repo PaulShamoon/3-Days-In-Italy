@@ -1,6 +1,11 @@
 import logging
 
-from backend.models import Place
+from haversine import haversine
+
+from backend.models import (
+    Place,
+    TRIP_LENGTH_DAYS
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,3 +61,55 @@ def validate_selections(
                 selection.get("id"),
             )
     return validated
+
+
+def nearest_neighbor_tour(places: list[Place]) -> list[Place]:
+    """
+    Greedy nearest-neighbor tour across all places: start from the
+    westernmost place (a deterministic anchor regardless of input
+    order — doesn't depend on LLM selection/refinement order), then
+    repeatedly move to the nearest unvisited place.
+
+    This single tour serves double duty for itinerary building: slicing
+    it into TRIP_LENGTH_DAYS consecutive chunks (see split_into_days)
+    both clusters places by geographic proximity into days AND leaves
+    each day's places already in nearest-neighbor order, without a
+    separate per-day ordering pass.
+    """
+    if not places:
+        return []
+
+    remaining = list(places)
+    current = min(remaining, key=lambda p: p.longitude)
+    remaining.remove(current)
+    tour = [current]
+
+    while remaining:
+        current = min(
+            remaining,
+            key=lambda p: haversine(
+                (current.latitude, current.longitude),
+                (p.latitude, p.longitude))
+        )
+        remaining.remove(current)
+        tour.append(current)
+
+    return tour
+
+
+def split_into_days(tour: list[Place]) -> list[list[Place]]:
+    """
+    Slice an ordered tour into TRIP_LENGTH_DAYS consecutive groups. When the
+    count doesn't divide evenly, earlier days get the extra place(s) so
+    no day ends up sparse relative to the others.
+    """
+    base, remainder = divmod(len(tour), TRIP_LENGTH_DAYS)
+
+    days = []
+    start = 0
+    for day_index in range(TRIP_LENGTH_DAYS):
+        size = base + (1 if day_index < remainder else 0)
+        days.append(tour[start:start + size])
+        start += size
+
+    return days
