@@ -5,9 +5,9 @@ import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from models import Place
-from routes import router
-from utils.preprocessing import fix_encoding_corruption_deep
+from backend.models import Place
+from backend.routes.routes import router
+from backend.preprocessing import fix_encoding_corruption_deep
 
 DATA_PATH = Path(__file__).parent / "data" / "italy.json"
 

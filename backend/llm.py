@@ -2,7 +2,7 @@ import os
 
 import anthropic
 
-from models import (
+from backend.models import (
     BusyLevel,
     BUSY_LEVEL_RANGE,
     Place
@@ -80,7 +80,7 @@ def _place_summary(place: Place) -> dict:
     }
 
 
-def pick_region(user_prompt: str, available_regions: list[str]) -> str:
+def llm_pick_region(user_prompt: str, available_regions: list[str]) -> str:
     """
     First LLM call (region-pick mode): given the user's free-text prompt and
     the distinct regions present in the dataset, pick exactly one region.
@@ -115,7 +115,7 @@ def pick_region(user_prompt: str, available_regions: list[str]) -> str:
     raise NotImplementedError
 
 
-def select_places(
+def llm_select_places(
     user_prompt: str,
     places: list[Place],
     busy_level: BusyLevel,
@@ -161,7 +161,7 @@ def select_places(
     raise NotImplementedError
 
 
-def refine_places(
+def llm_refine_places(
     user_prompt: str,
     places: list[Place],
     current_place_ids: list[str],
