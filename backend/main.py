@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from models import Place
 from routes import router
+from utils.preprocessing import fix_encoding_corruption_deep
 
 DATA_PATH = Path(__file__).parent / "data" / "italy.json"
 
@@ -18,10 +19,11 @@ async def lifespan(fastapi_app: FastAPI):
     parsed places on app.state so route handlers can read them without
     re-reading or re-parsing the file on every request.
     """
-    # TODO: apply the encoding fix here on load (re-decode/normalize),
-    # not per-request, so garbled characters are corrected once at startup.
     with open(DATA_PATH, encoding="utf-8") as f:
         raw = json.load(f)
+
+    # NOTE: This is required because the raw italy.json data has corrupted fields (i.e. price_range, description)
+    raw = fix_encoding_corruption_deep(raw)
     fastapi_app.state.places = [Place.model_validate(p) for p in raw]
     yield
     # no teardown needed
