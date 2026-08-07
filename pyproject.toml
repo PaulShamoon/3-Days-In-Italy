@@ -13,3 +13,12 @@ dependencies = [
 
 [tool.uv]
 package = false
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+addopts = "--import-mode=importlib"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
