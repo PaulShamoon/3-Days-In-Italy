@@ -1,14 +1,19 @@
 import os
 
 import anthropic
+from dotenv import load_dotenv
 
 from backend.models import (
     BusyLevel,
     Place
 )
-from backend.llm.utils import target_count_description
+from backend.llm.utils import (
+    target_count_description,
+    extract_tool_input
+)
 
-# TODO: replace with a real key via .env once Anthropic access is set up.
+load_dotenv()
+
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "placeholder-key-not-set")
 
 MODEL = "claude-sonnet-5"
@@ -109,10 +114,15 @@ def llm_pick_region(user_prompt: str, available_regions: list[str]) -> str:
         messages=[{"role": "user", "content": user_message}],
     )
 
-    # TODO: extract tool_use block from response.content, return input["region"]
-    # TODO: validate the returned region is actually in available_regions;
-    #       if not, raise (do not silently fall back to a guess)
-    raise NotImplementedError
+    region = extract_tool_input(response, "pick_region")["region"]
+
+    if region not in available_regions:
+        raise ValueError(
+            f"LLM picked region {region!r}, which isn't one of the "
+            f"available regions: {available_regions}"
+        )
+
+    return region
 
 
 def llm_select_places(
@@ -152,8 +162,7 @@ def llm_select_places(
         messages=[{"role": "user", "content": user_message}],
     )
 
-    # TODO: extract tool_use block from response.content, return input["selections"]
-    raise NotImplementedError
+    return extract_tool_input(response, "select_places")["selections"]
 
 
 def llm_refine_places(
@@ -205,5 +214,4 @@ def llm_refine_places(
         messages=[{"role": "user", "content": user_message}],
     )
 
-    # TODO: extract tool_use block from response.content, return input["selections"]
-    raise NotImplementedError
+    return extract_tool_input(response, "select_places")["selections"]
