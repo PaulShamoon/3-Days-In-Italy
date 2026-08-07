@@ -68,3 +68,14 @@ class TestValidateSelections:
         raw = [{"id": "place_999", "reason": "hallucinated"}]
 
         assert validate_selections(raw, id_to_place, "select_places") == []
+
+    def test_drops_duplicate_ids_keeping_first_occurrence(self, make_place):
+        places = [make_place(id="place_001")]
+        id_to_place = {p.id: p for p in places}
+        raw = [
+            {"id": "place_001", "reason": "first reason"},
+            {"id": "place_001", "reason": "second reason"},
+        ]
+
+        result = validate_selections(raw, id_to_place, "select_places")
+        assert result == [{"id": "place_001", "reason": "first reason"}]

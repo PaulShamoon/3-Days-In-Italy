@@ -19,6 +19,9 @@ async def lifespan(fastapi_app: FastAPI):
     Load and validate italy.json once at application startup, storing the
     parsed places on app.state so route handlers can read them without
     re-reading or re-parsing the file on every request.
+
+    Args:
+        fastapi_app (FastAPI): The FastAPI application instance being started.
     """
     with open(DATA_PATH, encoding="utf-8") as f:
         raw = json.load(f)

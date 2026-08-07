@@ -36,6 +36,13 @@ async def build_itinerary(body: ItineraryRequest, request: Request) -> Itinerary
     Raises 400 if place_ids don't meet the busy level's minimum count
     for a 3-day trip (mirrors the frontend's pre-Approve gate, enforced
     again here in case that gate is bypassed).
+
+    Args:
+        body (ItineraryRequest): The approved place IDs and busy level.
+        request (Request): The incoming request, used to access the loaded dataset on app.state.
+
+    Returns:
+        ItineraryResponse: The full 3-day, day-by-day itinerary.
     """
     places: list[Place] = request.app.state.places
     id_to_place = {p.id: p for p in places}
@@ -44,19 +51,22 @@ async def build_itinerary(body: ItineraryRequest, request: Request) -> Itinerary
     if missing:
         raise HTTPException(status_code=400, detail=f"Unknown place ids: {missing}")
 
+    # De-duplicate while preserving first-occurrence order
+    unique_place_ids = list(dict.fromkeys(body.place_ids))
+
     per_day_min, _ = BUSY_LEVEL_RANGE[body.busy_level]
     required_minimum = per_day_min * TRIP_LENGTH_DAYS
-    if len(body.place_ids) < required_minimum:
+    if len(unique_place_ids) < required_minimum:
         raise HTTPException(
             status_code=400,
             detail=(
                 f"At least {required_minimum} places are required for a "
                 f"{TRIP_LENGTH_DAYS}-day {body.busy_level.value} trip — "
-                f"got {len(body.place_ids)}."
+                f"got {len(unique_place_ids)}."
             ),
         )
 
-    selected_places = [id_to_place[pid] for pid in body.place_ids]
+    selected_places = [id_to_place[pid] for pid in unique_place_ids]
     tour = nearest_neighbor_tour(selected_places)
     day_groups = split_into_days(tour)
 

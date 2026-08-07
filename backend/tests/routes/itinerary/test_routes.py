@@ -26,6 +26,34 @@ class TestItineraryRoute:
         })
         assert response.status_code == 400
 
+    def test_duplicate_ids_count_toward_minimum_only_once(self, make_place):
+        # 3 unique places repeated to fill 6 slots still falls short of
+        # chill's minimum of 6 *unique* places.
+        places = [make_place(id=f"place_{i:03d}") for i in range(1, 4)]
+        place_ids = [p.id for p in places] * 2
+        response = _client(places).post("/itinerary", json={
+            "place_ids": place_ids,
+            "busy_level": "chill",
+        })
+        assert response.status_code == 400
+
+    def test_duplicate_ids_deduplicated_in_result(self, make_place):
+        places = [
+            make_place(id=f"place_{i:03d}", longitude=float(i), latitude=45.0)
+            for i in range(1, 7)
+        ]
+        place_ids = [p.id for p in places] + [places[0].id]
+        response = _client(places).post("/itinerary", json={
+            "place_ids": place_ids,
+            "busy_level": "chill",
+        })
+
+        assert response.status_code == 200
+        all_returned_ids = [
+            place["id"] for day in response.json()["days"] for place in day["places"]
+        ]
+        assert sorted(all_returned_ids) == sorted(p.id for p in places)
+
     def test_valid_request_returns_three_days(self, make_place):
         places = [
             make_place(id=f"place_{i:03d}", longitude=float(i), latitude=45.0)

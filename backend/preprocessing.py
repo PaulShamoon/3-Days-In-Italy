@@ -24,6 +24,12 @@ def fix_encoding_corruption(value: str) -> str:
     the round-trip (not valid Latin-1, or not valid UTF-8 once
     re-decoded) are assumed to already be fine and returned as-is
     rather than raising.
+
+    Args:
+        value (str): The string to check and repair if corrupted.
+
+    Returns:
+        str: The repaired string, or the original if it wasn't corrupted.
     """
     try:
         return value.encode("latin-1").decode("utf-8")
@@ -37,6 +43,12 @@ def fix_encoding_corruption_deep(data):
     JSON-like structure (dicts, lists, and their nested contents) —
     covers top-level string fields (description, price_range, ...) as
     well as string fields nested inside lists (tags).
+
+    Args:
+        data (Any): A JSON-like value (dict, list, string, or other scalar) to walk recursively.
+
+    Returns:
+        Any: The same structure with every string value repaired.
     """
     if isinstance(data, str):
         return fix_encoding_corruption(data)

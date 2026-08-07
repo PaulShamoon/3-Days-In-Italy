@@ -27,6 +27,12 @@ def nearest_neighbor_tour(places: list[Place]) -> list[Place]:
     both clusters places by geographic proximity into days AND leaves
     each day's places already in nearest-neighbor order, without a
     separate per-day ordering pass.
+
+    Args:
+        places (list[Place]): The places to order into a tour.
+
+    Returns:
+        list[Place]: The places ordered into a single nearest-neighbor tour.
     """
     if not places:
         return []
@@ -58,6 +64,12 @@ def extract_first_open_hour(hours: str | None) -> int | None:
     "does this place open early enough to be a normal daytime stop."
     Returns None for null or non-numeric hours text (e.g. "Evenings"),
     treated as unconstrained rather than guessed at.
+
+    Args:
+        hours (str | None): The place's free-text hours field.
+
+    Returns:
+        int | None: The 24h hour of the first opening time, or None if unparseable/null.
     """
     if hours is None:
         return None
@@ -91,6 +103,12 @@ def reorder_evening_only_last(day_places: list[Place]) -> list[Place]:
     daytime-compatible ones, preserving the existing (nearest-neighbor)
     order within each group. Fixes cases like a dinner-only restaurant
     ending up as the first stop of the day.
+
+    Args:
+        day_places (list[Place]): A single day's places, in their current order.
+
+    Returns:
+        list[Place]: The same places, stable-sorted so evening-only places come last.
     """
     return sorted(day_places, key=is_evening_only)
 
@@ -100,6 +118,12 @@ def evening_only_warnings(day_places: list[Place]) -> list[ItineraryWarning]:
     Flag adjacent pairs in a day's final order that are both
     evening-only — realistically only one dinner-hour venue fits per
     evening. Normal daytime-into-evening transitions aren't flagged.
+
+    Args:
+        day_places (list[Place]): A single day's places, in their final order.
+
+    Returns:
+        list[ItineraryWarning]: A warning for each adjacent pair of evening-only places.
     """
     warnings = []
     for first, second in zip(day_places, day_places[1:]):
@@ -121,6 +145,12 @@ def split_into_days(tour: list[Place]) -> list[list[Place]]:
     Slice an ordered tour into TRIP_LENGTH_DAYS consecutive groups. When the
     count doesn't divide evenly, earlier days get the extra place(s) so
     no day ends up sparse relative to the others.
+
+    Args:
+        tour (list[Place]): The places in nearest-neighbor tour order.
+
+    Returns:
+        list[list[Place]]: The tour split into TRIP_LENGTH_DAYS consecutive groups.
     """
     base, remainder = divmod(len(tour), TRIP_LENGTH_DAYS)
 
