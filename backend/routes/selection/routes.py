@@ -46,7 +46,7 @@ async def select_places(body: SelectionRequest, request: Request) -> SelectionRe
         SelectionResponse: The resolved region and selected places, with match-count info.
     """
     places: list[Place] = request.app.state.places
-    known_regions = sorted({p.region for p in places})
+    known_regions: list[str] = request.app.state.known_regions
 
     # body.region_hint is only trusted if it's actually one of the dataset's known regions, otherwise treated as no hint at all
     resolved_region: str | None = None
@@ -116,7 +116,7 @@ async def refine_places(body: RefineRequest, request: Request) -> RefineResponse
         RefineResponse: The updated place selection, or an out-of-region flag if the prompt requested a different region.
     """
     places: list[Place] = request.app.state.places
-    known_regions = sorted({p.region for p in places})
+    known_regions: list[str] = request.app.state.known_regions
 
     # String-match against literal region names and defer to the LLM unless there is exactly one confident match.
     requested_region = match_known_region(body.prompt.text, known_regions)

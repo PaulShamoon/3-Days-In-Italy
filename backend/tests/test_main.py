@@ -15,3 +15,9 @@ class TestLifespan:
         with TestClient(main.app) as client:
             paths = client.get("/openapi.json").json()["paths"]
             assert set(paths.keys()) == {"/select", "/refine", "/itinerary"}
+
+    def test_computes_known_regions_once_at_startup(self):
+        with TestClient(main.app) as client:
+            places = client.app.state.places
+            known_regions = client.app.state.known_regions
+            assert known_regions == sorted({p.region for p in places})

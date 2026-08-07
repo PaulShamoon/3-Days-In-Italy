@@ -5,6 +5,25 @@ from backend.models import Place
 logger = logging.getLogger(__name__)
 
 
+def _is_substring_of_another_match(region: str, matches: list[str]) -> bool:
+    """
+    Whether `region` is fully contained within a different, longer
+    match — e.g. a hypothetical "Trentino" inside "Trentino-Alto Adige".
+
+    Args:
+        region (str): The region name to check.
+        matches (list[str]): All region names matched so far.
+
+    Returns:
+        bool: True if some other match in `matches` contains `region` as a substring.
+    """
+    for other in matches:
+        if other != region and region.lower() in other.lower():
+            return True
+
+    return False
+
+
 def match_known_region(text: str, known_regions: list[str]) -> str | None:
     """
     Case-insensitive substring match of `text` against each of
@@ -13,6 +32,11 @@ def match_known_region(text: str, known_regions: list[str]) -> str | None:
     fall through to the LLM's pick_region call rather than guessing,
     since neither is a confident code-only resolution.
 
+    A region that's itself a substring of another matched region is
+    dropped in favor of the longer, more specific match rather than
+    counted as a separate ambiguous match — otherwise a text naming one
+    specific region could never resolve without the LLM.
+
     Args:
         text (str): The free-text to search for a region name in.
         known_regions (list[str]): The region names to match against.
@@ -20,9 +44,15 @@ def match_known_region(text: str, known_regions: list[str]) -> str | None:
     Returns:
         str | None: The single matching region name, or None if zero or multiple regions matched.
     """
-    lowered = text.lower()
-    matches = [region for region in known_regions if region.lower() in lowered]
-    return matches[0] if len(matches) == 1 else None
+    lowered_text = text.lower()
+    matches = [region for region in known_regions if region.lower() in lowered_text]
+
+    specific_matches = [
+        region for region in matches
+        if not _is_substring_of_another_match(region, matches)
+    ]
+
+    return specific_matches[0] if len(specific_matches) == 1 else None
 
 
 def trim_to_target_max(selections: list[dict], target_max: int | None) -> list[dict]:

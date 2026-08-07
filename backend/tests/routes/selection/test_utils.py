@@ -23,6 +23,16 @@ class TestMatchKnownRegion:
         # through to the LLM by design.
         assert match_known_region("I want to see Rome", self.KNOWN_REGIONS) is None
 
+    def test_prefers_longer_region_over_substring_region(self):
+        regions = ["Trentino", "Trentino-Alto Adige", "Lazio"]
+        text = "a trip through Trentino-Alto Adige"
+        assert match_known_region(text, regions) == "Trentino-Alto Adige"
+
+    def test_still_ambiguous_when_neither_is_a_substring(self):
+        regions = ["Trentino", "Trentino-Alto Adige", "Lazio"]
+        text = "torn between Trentino-Alto Adige and Lazio"
+        assert match_known_region(text, regions) is None
+
 
 class TestTrimToTargetMax:
     def test_under_max_unchanged(self):
