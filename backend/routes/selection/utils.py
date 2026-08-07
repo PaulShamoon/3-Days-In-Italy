@@ -24,7 +24,7 @@ def _is_substring_of_another_match(region: str, matches: list[str]) -> bool:
     return False
 
 
-def _find_single_confident_match(text: str, candidates: list[str]) -> str | None:
+def find_single_confident_match(text: str, candidates: list[str]) -> str | None:
     """
     Case-insensitive substring match of `text` against each of
     `candidates`. Returns the single matching candidate if exactly one
@@ -35,9 +35,8 @@ def _find_single_confident_match(text: str, candidates: list[str]) -> str | None
     ambiguous match — otherwise a text naming one specific candidate
     could never resolve.
 
-    Shared by match_known_region and match_known_city — the matching
-    logic itself doesn't care whether the candidates are region or
-    city names.
+    Generic over what `candidates` represents — region names, city
+    names, place names, etc. — the matching logic itself doesn't care.
 
     Args:
         text (str): The free-text to search for a candidate name in.
@@ -57,38 +56,54 @@ def _find_single_confident_match(text: str, candidates: list[str]) -> str | None
     return specific_matches[0] if len(specific_matches) == 1 else None
 
 
-def match_known_region(text: str, known_regions: list[str]) -> str | None:
+def resolve_requested_region(
+    text: str,
+    known_regions: list[str],
+    known_cities: list[str],
+    city_to_region: dict[str, str],
+    known_place_names: list[str],
+    place_name_to_region: dict[str, str],
+) -> str | None:
     """
-    Find a single confident region-name match in `text`. Falls through
-    (returns None) on zero or multiple matches rather than guessing,
-    deferring to the LLM's pick_region call instead.
+    Best-effort code-only resolution of which region (if any) a piece
+    of free text is asking about, tried in order of specificity: a
+    literal region name, then a city name, then a specific place name
+    from the full dataset. Used by /refine's out-of-region check so the
+    locked-region constraint is enforced structurally, catching a
+    city/landmark mention ("Rome", "the Colosseum") that a region-name-
+    only check would miss.
+
+    Returns None if nothing confidently matches — that means this
+    code-only pass found no reason to flag the request, not that it's
+    definitely in-region. The LLM call that follows still receives a
+    hard region-lock instruction as a backstop, and a landmark this
+    dataset doesn't itself contain can still slip through; this is a
+    best-effort structural guard, not a substitute for that instruction.
 
     Args:
-        text (str): The free-text to search for a region name in.
-        known_regions (list[str]): The region names to match against.
+        text (str): The free-text to resolve a region from.
+        known_regions (list[str]): Known region names.
+        known_cities (list[str]): Known city names.
+        city_to_region (dict[str, str]): City name -> region, for every place in the dataset.
+        known_place_names (list[str]): Every place name in the full dataset (all regions).
+        place_name_to_region (dict[str, str]): Place name -> region, for every place in the dataset.
 
     Returns:
-        str | None: The single matching region name, or None if zero or multiple regions matched.
+        str | None: The resolved region, or None if nothing confidently matched.
     """
-    return _find_single_confident_match(text, known_regions)
+    region = find_single_confident_match(text, known_regions)
+    if region is not None:
+        return region
 
+    city = find_single_confident_match(text, known_cities)
+    if city is not None:
+        return city_to_region[city]
 
-def match_known_city(text: str, known_cities: list[str]) -> str | None:
-    """
-    Find a single confident city-name match in `text`. Used by /refine
-    to catch a city mention (e.g. "Rome") that implies a region other
-    than the locked one, which a region-name-only check would miss —
-    the region lock is meant to be a hard, code-enforced constraint,
-    not just a prompt instruction to the LLM.
+    place_name = find_single_confident_match(text, known_place_names)
+    if place_name is not None:
+        return place_name_to_region[place_name]
 
-    Args:
-        text (str): The free-text to search for a city name in.
-        known_cities (list[str]): The city names to match against.
-
-    Returns:
-        str | None: The single matching city name, or None if zero or multiple cities matched.
-    """
-    return _find_single_confident_match(text, known_cities)
+    return None
 
 
 def trim_to_target_max(selections: list[dict], target_max: int | None) -> list[dict]:

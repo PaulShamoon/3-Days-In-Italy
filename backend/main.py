@@ -35,6 +35,8 @@ async def lifespan(fastapi_app: FastAPI):
     fastapi_app.state.known_regions = sorted({p.region for p in fastapi_app.state.places})
     fastapi_app.state.known_cities = sorted({p.city for p in fastapi_app.state.places})
     fastapi_app.state.city_to_region = {p.city: p.region for p in fastapi_app.state.places}
+    fastapi_app.state.known_place_names = sorted({p.name for p in fastapi_app.state.places})
+    fastapi_app.state.place_name_to_region = {p.name: p.region for p in fastapi_app.state.places}
     yield
     # no teardown needed
 

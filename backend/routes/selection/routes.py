@@ -19,8 +19,8 @@ from backend.models import (
     TRIP_LENGTH_DAYS,
 )
 from backend.routes.selection.utils import (
-    match_known_region,
-    match_known_city,
+    find_single_confident_match,
+    resolve_requested_region,
     trim_to_target_max,
     validate_selections
 )
@@ -56,7 +56,7 @@ async def select_places(body: SelectionRequest, request: Request) -> SelectionRe
 
     # String-match against literal region names and defer to the LLM unless there is exactly one confident match.
     if resolved_region is None:
-        resolved_region = match_known_region(body.prompt.text, known_regions)
+        resolved_region = find_single_confident_match(body.prompt.text, known_regions)
 
     if resolved_region is None:
         resolved_region = llm_pick_region(body.prompt.text, known_regions)
@@ -117,20 +117,16 @@ async def refine_places(body: RefineRequest, request: Request) -> RefineResponse
         RefineResponse: The updated place selection, or an out-of-region flag if the prompt requested a different region.
     """
     places: list[Place] = request.app.state.places
-    known_regions: list[str] = request.app.state.known_regions
-    known_cities: list[str] = request.app.state.known_cities
-    city_to_region: dict[str, str] = request.app.state.city_to_region
 
-    # String-match against literal region names first; if that's inconclusive,
-    # also try city names (e.g. "Rome" implies Lazio) — a region-name-only
-    # check would silently miss a city mention naming a different region,
-    # and the lock is meant to be a hard, code-enforced constraint rather
-    # than just an instruction handed to the LLM
-    requested_region = match_known_region(body.prompt.text, known_regions)
-    if requested_region is None:
-        matched_city = match_known_city(body.prompt.text, known_cities)
-        if matched_city is not None:
-            requested_region = city_to_region[matched_city]
+    # Tries to match the prompt to a known region, city, or place name. Returns None if no confident match is found.
+    requested_region = resolve_requested_region(
+        body.prompt.text,
+        request.app.state.known_regions,
+        request.app.state.known_cities,
+        request.app.state.city_to_region,
+        request.app.state.known_place_names,
+        request.app.state.place_name_to_region,
+    )
 
     # If the prompt clearly references a region other than the originally selected region, return and warn user
     if requested_region is not None and requested_region != body.locked_region:
