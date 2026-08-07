@@ -29,9 +29,12 @@ async def lifespan(fastapi_app: FastAPI):
 
     # NOTE: This is required because the raw italy.json data has corrupted fields (i.e. price_range, description)
     raw = fix_encoding_corruption_deep(raw)
+
     # Define these once at startup so route handlers can access them without re-reading the file on every request
     fastapi_app.state.places = [Place.model_validate(p) for p in raw]
     fastapi_app.state.known_regions = sorted({p.region for p in fastapi_app.state.places})
+    fastapi_app.state.known_cities = sorted({p.city for p in fastapi_app.state.places})
+    fastapi_app.state.city_to_region = {p.city: p.region for p in fastapi_app.state.places}
     yield
     # no teardown needed
 

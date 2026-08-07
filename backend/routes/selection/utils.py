@@ -24,18 +24,44 @@ def _is_substring_of_another_match(region: str, matches: list[str]) -> bool:
     return False
 
 
-def match_known_region(text: str, known_regions: list[str]) -> str | None:
+def _find_single_confident_match(text: str, candidates: list[str]) -> str | None:
     """
     Case-insensitive substring match of `text` against each of
-    `known_regions`. Returns the single matching region name if exactly
-    one is found. Returns None on zero or multiple matches — both cases
-    fall through to the LLM's pick_region call rather than guessing,
-    since neither is a confident code-only resolution.
+    `candidates`. Returns the single matching candidate if exactly one
+    is found. Returns None on zero or multiple matches, since neither
+    is a confident code-only resolution. A candidate that's itself a
+    substring of another matched candidate is dropped in favor of the
+    longer, more specific match rather than counted as a separate
+    ambiguous match — otherwise a text naming one specific candidate
+    could never resolve.
 
-    A region that's itself a substring of another matched region is
-    dropped in favor of the longer, more specific match rather than
-    counted as a separate ambiguous match — otherwise a text naming one
-    specific region could never resolve without the LLM.
+    Shared by match_known_region and match_known_city — the matching
+    logic itself doesn't care whether the candidates are region or
+    city names.
+
+    Args:
+        text (str): The free-text to search for a candidate name in.
+        candidates (list[str]): The names to match against.
+
+    Returns:
+        str | None: The single matching candidate, or None if zero or multiple matched.
+    """
+    lowered_text = text.lower()
+    matches = [candidate for candidate in candidates if candidate.lower() in lowered_text]
+
+    specific_matches = [
+        candidate for candidate in matches
+        if not _is_substring_of_another_match(candidate, matches)
+    ]
+
+    return specific_matches[0] if len(specific_matches) == 1 else None
+
+
+def match_known_region(text: str, known_regions: list[str]) -> str | None:
+    """
+    Find a single confident region-name match in `text`. Falls through
+    (returns None) on zero or multiple matches rather than guessing,
+    deferring to the LLM's pick_region call instead.
 
     Args:
         text (str): The free-text to search for a region name in.
@@ -44,15 +70,25 @@ def match_known_region(text: str, known_regions: list[str]) -> str | None:
     Returns:
         str | None: The single matching region name, or None if zero or multiple regions matched.
     """
-    lowered_text = text.lower()
-    matches = [region for region in known_regions if region.lower() in lowered_text]
+    return _find_single_confident_match(text, known_regions)
 
-    specific_matches = [
-        region for region in matches
-        if not _is_substring_of_another_match(region, matches)
-    ]
 
-    return specific_matches[0] if len(specific_matches) == 1 else None
+def match_known_city(text: str, known_cities: list[str]) -> str | None:
+    """
+    Find a single confident city-name match in `text`. Used by /refine
+    to catch a city mention (e.g. "Rome") that implies a region other
+    than the locked one, which a region-name-only check would miss —
+    the region lock is meant to be a hard, code-enforced constraint,
+    not just a prompt instruction to the LLM.
+
+    Args:
+        text (str): The free-text to search for a city name in.
+        known_cities (list[str]): The city names to match against.
+
+    Returns:
+        str | None: The single matching city name, or None if zero or multiple cities matched.
+    """
+    return _find_single_confident_match(text, known_cities)
 
 
 def trim_to_target_max(selections: list[dict], target_max: int | None) -> list[dict]:

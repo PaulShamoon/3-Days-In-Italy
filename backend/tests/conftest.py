@@ -103,11 +103,14 @@ def make_tool_use_response(tool_name: str, input_dict: dict):
 
 def build_test_app(router, places: list[Place]) -> FastAPI:
     """Build a minimal FastAPI app wrapping a single router, with
-    app.state.places/known_regions set directly from a fixture list —
-    bypasses the real lifespan (file loading/encoding-fix/validation),
-    which is tested separately in test_main.py."""
+    app.state.places/known_regions/known_cities/city_to_region set
+    directly from a fixture list — bypasses the real lifespan (file
+    loading/encoding-fix/validation), which is tested separately in
+    test_main.py."""
     app = FastAPI()
     app.state.places = places
     app.state.known_regions = sorted({p.region for p in places})
+    app.state.known_cities = sorted({p.city for p in places})
+    app.state.city_to_region = {p.city: p.region for p in places}
     app.include_router(router)
     return app
