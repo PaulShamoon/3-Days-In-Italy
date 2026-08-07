@@ -12,7 +12,11 @@ from backend.models import (
 # "evening-only" rather than a normal daytime stop.
 EVENING_CUTOFF_HOUR = 17  # 5 PM
 
-_FIRST_TIME_RE = re.compile(r"(\d{1,2})(?::\d{2})?\s*(am|pm)?", re.IGNORECASE)
+# Requires a trailing "-" (the start of a "<time>-<time>" range, which
+# every hours value in the dataset uses) so a stray leading number in
+# the string (e.g. "7" in "7 days a week, 10am-6pm") isn't mistaken for
+# an opening time.
+_FIRST_TIME_RE = re.compile(r"(\d{1,2})(?::\d{2})?\s*(am|pm)?\s*-", re.IGNORECASE)
 
 
 def nearest_neighbor_tour(places: list[Place]) -> list[Place]:
@@ -37,17 +41,24 @@ def nearest_neighbor_tour(places: list[Place]) -> list[Place]:
     if not places:
         return []
 
+    # id is included as a tie-break so a longitude/distance tie between
+    # two places resolves the same way regardless of their order in the
+    # input list — ids are unique, so this always fully determines the pick
     remaining = list(places)
-    current = min(remaining, key=lambda p: p.longitude)
+    current = min(remaining, key=lambda p: (p.longitude, p.id))
     remaining.remove(current)
     tour = [current]
 
     while remaining:
         current = min(
             remaining,
-            key=lambda p: haversine(
-                (current.latitude, current.longitude),
-                (p.latitude, p.longitude))
+            key=lambda p: (
+                haversine(
+                    (current.latitude, current.longitude),
+                    (p.latitude, p.longitude)
+                ),
+                p.id,
+            )
         )
         remaining.remove(current)
         tour.append(current)

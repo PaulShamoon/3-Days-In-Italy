@@ -34,6 +34,29 @@ class TestNearestNeighborTour:
         assert {p.id for p in tour} == {p.id for p in places}
         assert len(tour) == len(places)
 
+    def test_longitude_tie_broken_by_id_regardless_of_input_order(self, make_place):
+        tied_b = make_place(id="tied_b", longitude=10.0, latitude=45.0)
+        tied_a = make_place(id="tied_a", longitude=10.0, latitude=45.0)
+
+        tour_1 = nearest_neighbor_tour([tied_b, tied_a])
+        tour_2 = nearest_neighbor_tour([tied_a, tied_b])
+
+        assert tour_1[0].id == "tied_a"
+        assert tour_2[0].id == "tied_a"
+
+    def test_distance_tie_broken_by_id_regardless_of_input_order(self, make_place):
+        # tied_a/tied_b sit at the exact same coordinates (e.g. two
+        # places in the same piazza), so they're exactly equidistant
+        # from start regardless of floating-point distance quirks.
+        start = make_place(id="start", longitude=0.0, latitude=45.0)
+        tied_b = make_place(id="tied_b", longitude=5.0, latitude=45.0)
+        tied_a = make_place(id="tied_a", longitude=5.0, latitude=45.0)
+
+        tour_1 = nearest_neighbor_tour([start, tied_b, tied_a])
+        tour_2 = nearest_neighbor_tour([start, tied_a, tied_b])
+
+        assert [p.id for p in tour_1] == [p.id for p in tour_2] == ["start", "tied_a", "tied_b"]
+
     def test_greedily_picks_nearest_unvisited(self, make_place):
         # west=0, near_west=1, far_east=10 -- from west, near_west (dist 1)
         # is nearer than far_east (dist 10), so it should be visited next.
@@ -76,6 +99,10 @@ class TestExtractFirstOpenHour:
 
     def test_crosses_midnight_still_extracts_start(self):
         assert extract_first_open_hour("8:00-01:00") == 8
+
+    def test_ignores_stray_leading_number_not_part_of_a_time_range(self):
+        assert extract_first_open_hour("7 days a week, 10am-6pm") == 10
+        assert extract_first_open_hour("Level 2, 9am-5pm") == 9
 
 
 class TestIsEveningOnly:
