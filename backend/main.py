@@ -6,7 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.models import Place
-from backend.routes.routes import router
+from backend.routes.selection.routes import router as selection_router
+from backend.routes.itinerary.routes import router as itinerary_router
 from backend.preprocessing import fix_encoding_corruption_deep
 
 DATA_PATH = Path(__file__).parent / "data" / "italy.json"
@@ -39,4 +40,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(selection_router)
+app.include_router(itinerary_router)

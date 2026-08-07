@@ -1,6 +1,5 @@
 from fastapi import (
     APIRouter,
-    HTTPException,
     Request
 )
 
@@ -16,18 +15,13 @@ from backend.models import (
     SelectedPlace,
     RefineRequest,
     RefineResponse,
-    ItineraryRequest,
-    ItineraryResponse,
-    ItineraryDay,
     BUSY_LEVEL_RANGE,
     TRIP_LENGTH_DAYS,
 )
-from backend.routes.utils import (
+from backend.routes.selection.utils import (
     match_known_region,
     trim_to_target_max,
-    validate_selections,
-    nearest_neighbor_tour,
-    split_into_days
+    validate_selections
 )
 
 # Uses APIRouter so this module has no dependency on main.py
@@ -152,51 +146,3 @@ async def refine_places(body: RefineRequest, request: Request) -> RefineResponse
     ]
 
     return RefineResponse(selected=selected)
-
-
-@router.post("/itinerary", response_model=ItineraryResponse)
-async def build_itinerary(body: ItineraryRequest, request: Request) -> ItineraryResponse:
-    """
-    Deterministically build a 3-day itinerary from the approved place
-    IDs. Builds a single greedy nearest-neighbor tour
-    across all approved places (anchored at the westernmost place), then
-    slices it into TRIP_LENGTH_DAYS consecutive groups — this both
-    clusters places into days by geographic proximity and leaves each
-    day already ordered by proximity, in one pass.
-
-    Raises 400 if place_ids don't meet the busy level's minimum count
-    for a 3-day trip (mirrors the frontend's pre-Approve gate, enforced
-    again here in case that gate is bypassed).
-    """
-    places: list[Place] = request.app.state.places
-    id_to_place = {p.id: p for p in places}
-
-    missing = [pid for pid in body.place_ids if pid not in id_to_place]
-    if missing:
-        raise HTTPException(status_code=400, detail=f"Unknown place ids: {missing}")
-
-    per_day_min, _ = BUSY_LEVEL_RANGE[body.busy_level]
-    required_minimum = per_day_min * TRIP_LENGTH_DAYS
-    if len(body.place_ids) < required_minimum:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"At least {required_minimum} places are required for a "
-                f"{TRIP_LENGTH_DAYS}-day {body.busy_level.value} trip — "
-                f"got {len(body.place_ids)}."
-            ),
-        )
-
-    selected_places = [id_to_place[pid] for pid in body.place_ids]
-    tour = nearest_neighbor_tour(selected_places)
-    day_groups = split_into_days(tour)
-
-    # TODO: compute ItineraryWarning entries for hours-overlap conflicts —
-    # not yet designed (needs a definition of "conflict" against the
-    # dataset's free-text `hours` field before this can be implemented)
-    days = [
-        ItineraryDay(day_number=day_index + 1, places=day_group, warnings=[])
-        for day_index, day_group in enumerate(day_groups)
-    ]
-
-    return ItineraryResponse(days=days)
