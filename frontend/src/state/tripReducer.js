@@ -88,7 +88,18 @@ export function tripReducer(state, action) {
       return { ...state, stage: 'map', placesStatus: 'idle', placeCatalog: action.payload.placeCatalog }
 
     case ACTION_TYPES.PLACES_FAILED:
-      return { ...state, placesStatus: 'error', placesError: action.payload.error }
+      // Routes back to 'input' and reuses selectStatus/selectError so
+      // InputScreen's existing error banner picks it up — otherwise the
+      // user is left stuck on the loading screen forever with no
+      // indication the follow-up GET /places call failed.
+      return {
+        ...state,
+        stage: 'input',
+        placesStatus: 'error',
+        placesError: action.payload.error,
+        selectStatus: 'error',
+        selectError: action.payload.error,
+      }
 
     case ACTION_TYPES.PLACE_SELECTED:
       return {
