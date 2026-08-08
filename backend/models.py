@@ -1,11 +1,10 @@
 """
 Pydantic models — backend contracts for the trip planner
 
-Organized in four groups:
+Organized in three groups:
 1. Core data model (mirrors italy.json)
 2. Shared sub-models (reused across multiple endpoints)
 3. Per-endpoint request/response pairs
-4. Edge-case / non-happy-path response models
 """
 
 from enum import Enum
@@ -157,13 +156,16 @@ class RefineRequest(BaseModel):
 class RefineResponse(BaseModel):
     """Response body for POST /refine — either an updated place selection,
     or a flag indicating the refinement prompt requested somewhere outside
-    the locked region so the frontend can offer a region switch instead"""
+    the locked region, in which case the frontend shows out_of_region_message
+    and tells the user to start a new trip if they want that region — there's
+    no automatic "switch region" action."""
 
     selected: list[SelectedPlace]
     out_of_region_request: bool = False
     out_of_region_message: str | None = None
-    # Populated only if out_of_region_request is True; lets the frontend
-    # offer a "switch regions" action that restarts from selection.
+    # Populated only if out_of_region_request is True. Not currently used
+    # to drive any frontend action (no "switch region" flow) — included so
+    # the frontend/logs can name which region was actually being asked for.
     requested_region: str | None = None
 
 
@@ -201,26 +203,3 @@ class ItineraryResponse(BaseModel):
     """Response body for POST /itinerary — the full 3-day plan"""
 
     days: list[ItineraryDay]
-
-
-# Edge-case / non-happy-path response models
-
-class InsufficientMatchesError(BaseModel):
-    """Returned (as part of SelectionResponse, not a raised exception) when
-    matched_count < target_count_min. Frontend uses this to show the
-    'broaden interests or busy level' prompt instead of an incomplete plan"""
-
-    matched_count: int
-    target_count_min: int
-    message: str
-
-
-class MinimumCountError(BaseModel):
-    """Used by the frontend before enabling Approve — computed client-side
-    from BUSY_LEVEL_RANGE and TRIP_LENGTH_DAYS, but mirrored here so the
-    backend can also reject an itinerary request that doesn't meet it,
-    rather than trusting the frontend gate alone"""
-
-    current_count: int
-    required_minimum: int
-    message: str

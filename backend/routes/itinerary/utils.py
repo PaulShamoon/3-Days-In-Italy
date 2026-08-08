@@ -1,4 +1,5 @@
 import re
+from itertools import pairwise
 
 from haversine import haversine
 
@@ -137,7 +138,7 @@ def evening_only_warnings(day_places: list[Place]) -> list[ItineraryWarning]:
         list[ItineraryWarning]: A warning for each adjacent pair of evening-only places.
     """
     warnings = []
-    for first, second in zip(day_places, day_places[1:]):
+    for first, second in pairwise(day_places):
         if is_evening_only(first) and is_evening_only(second):
             warnings.append(
                 ItineraryWarning(
