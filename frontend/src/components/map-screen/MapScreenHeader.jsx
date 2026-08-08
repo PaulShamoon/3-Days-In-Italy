@@ -47,6 +47,11 @@ export function MapScreenHeader({ places }) {
             Add {placesNeeded} more place{placesNeeded === 1 ? '' : 's'} to approve
           </span>
         )}
+        {state.itineraryStatus === 'error' && (
+          <span className={styles.approveHint}>
+            {state.itineraryError ?? 'Something went wrong — please try again.'}
+          </span>
+        )}
       </div>
     </div>
   )
