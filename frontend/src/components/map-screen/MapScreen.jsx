@@ -16,9 +16,9 @@ export function MapScreen() {
 
   return (
     <div className={styles.screen}>
-      <MapScreenHeader />
+      <MapScreenHeader places={places} />
       <div className={styles.layout}>
-        <PlaceList />
+        <PlaceList places={places} />
         <TripMap places={places} />
       </div>
       {state.changesOpen && <MakeChangesPanel />}

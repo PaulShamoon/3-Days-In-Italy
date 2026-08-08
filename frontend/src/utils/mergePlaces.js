@@ -15,10 +15,10 @@
 export function mergeSelectionWithCatalog(selection, placeCatalog) {
   const merged = []
 
-  selection.forEach((entry, index) => {
+  selection.forEach((entry) => {
     const place = placeCatalog[entry.id]
     if (place) {
-      merged.push({ ...place, reason: entry.reason, number: index + 1 })
+      merged.push({ ...place, reason: entry.reason, number: merged.length + 1 })
     }
   })
 

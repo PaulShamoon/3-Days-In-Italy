@@ -1,15 +1,19 @@
 import { useTripStateContext } from '../../state/TripStateContext'
-import { selectWorkingPlaces, selectApproveGate } from '../../state/selectors'
+import { selectApproveGate } from '../../state/selectors'
 import { BUSY_LEVEL_META } from '../../constants'
 import { Tag } from '../primitives/Tag'
 import { Button } from '../primitives/Button'
 import { CheckIcon } from '../primitives/Icons'
 import styles from './MapScreenHeader.module.css'
 
-/** Region/pace tags, match count, and the Make changes / Approve actions. */
-export function MapScreenHeader() {
+/**
+ * Region/pace tags, match count, and the Make changes / Approve actions.
+ *
+ * Args:
+ *   places (Array<object>): Merged WorkingPlace[], computed once by MapScreen — only its length is used here.
+ */
+export function MapScreenHeader({ places }) {
   const { state, openChanges, approveItinerary } = useTripStateContext()
-  const places = selectWorkingPlaces(state)
   const { canApprove } = selectApproveGate(state)
   const busyMeta = BUSY_LEVEL_META[state.busyLevel]
 

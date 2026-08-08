@@ -1,13 +1,12 @@
 import { useId } from 'react'
+import { PROMPT_MAX_LENGTH } from '../../constants'
 import styles from './PromptField.module.css'
 
-const MAX_LENGTH = 500
-
 /**
- * Label + textarea + live character counter, capped at 500 characters
- * both by the native `maxlength` attribute and a server-side check
- * (backend/models.py's PromptText). Reused for both the initial trip
- * prompt and the make-changes prompt
+ * Label + textarea + live character counter, capped at PROMPT_MAX_LENGTH
+ * characters both by the native `maxlength` attribute and a server-side
+ * check (backend/models.py's PromptText). Reused for both the initial
+ * trip prompt and the make-changes prompt
  *
  * Args:
  *   label (string): The field's label text.
@@ -20,7 +19,7 @@ const MAX_LENGTH = 500
 export function PromptField({ label, value, onChange, placeholder, rows = 5, disabled = false }) {
   const fieldId = useId()
   const charCount = value.length
-  const overLimit = charCount > MAX_LENGTH
+  const overLimit = charCount > PROMPT_MAX_LENGTH
 
   return (
     <div>
@@ -32,7 +31,7 @@ export function PromptField({ label, value, onChange, placeholder, rows = 5, dis
           id={fieldId}
           className={styles.input}
           rows={rows}
-          maxLength={MAX_LENGTH}
+          maxLength={PROMPT_MAX_LENGTH}
           placeholder={placeholder}
           value={value}
           disabled={disabled}
@@ -41,7 +40,7 @@ export function PromptField({ label, value, onChange, placeholder, rows = 5, dis
       </div>
       <div className={styles.counterRow}>
         <span className={`${styles.counter} ${overLimit ? styles.counterOver : ''} tabular-nums`}>
-          {charCount}/{MAX_LENGTH}
+          {charCount}/{PROMPT_MAX_LENGTH}
         </span>
       </div>
     </div>

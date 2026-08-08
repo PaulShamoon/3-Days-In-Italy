@@ -19,6 +19,9 @@ export const BUSY_LEVELS = ['chill', 'busy', 'packed']
  */
 export const PROMPT_MIN_LENGTH = 15
 
+/** Maximum prompt length, both fields. Matches backend/models.py's PromptText max_length. */
+export const PROMPT_MAX_LENGTH = 500
+
 /** Rotating status text shown on the loading screen while /select runs. */
 export const LOADING_STEPS = [
   'Reading your prompt…',
