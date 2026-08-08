@@ -45,8 +45,10 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    # TODO: add deployed frontend origin when it's time to host app
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://3-days-in-italy.vercel.app",
+    ],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
