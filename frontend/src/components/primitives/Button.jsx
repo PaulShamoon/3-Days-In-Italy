@@ -35,7 +35,7 @@ export function Button({
       onClick={onClick}
       {...rest}
     >
-      {loading && <Spinner size={12} variant={variant === 'primary' ? 'inverse' : 'accent'} />}
+      {loading && <Spinner size={12} />}
       {children}
     </button>
   )

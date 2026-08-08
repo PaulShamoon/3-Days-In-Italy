@@ -1,18 +1,11 @@
 import styles from './Spinner.module.css'
 
 /**
- * A rotating ring spinner.
+ * A rotating ring spinner, styled for use inside a solid-colored button.
  *
  * Args:
  *   size (number): Diameter in pixels. Defaults to 16.
- *   variant ('accent'|'inverse'): 'accent' for standalone use (e.g. the loading screen); 'inverse' for a white spinner inside a solid-colored button.
  */
-export function Spinner({ size = 16, variant = 'accent' }) {
-  return (
-    <span
-      className={`${styles.spinner} ${variant === 'inverse' ? styles.inverse : styles.accent}`}
-      style={{ width: size, height: size }}
-      aria-hidden="true"
-    />
-  )
+export function Spinner({ size = 16 }) {
+  return <span className={styles.spinner} style={{ width: size, height: size }} aria-hidden="true" />
 }

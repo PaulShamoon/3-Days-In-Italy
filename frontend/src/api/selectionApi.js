@@ -6,18 +6,16 @@ import { fetchJson } from './client'
  * Args:
  *   promptText (string): The traveler's free-text trip request.
  *   busyLevel (string): "chill" | "busy" | "packed".
- *   regionHint (string | null): A region already resolved client-side, if any.
  *
  * Returns:
  *   Promise<object>: The SelectionResponse body.
  */
-export function postSelect({ promptText, busyLevel, regionHint = null }) {
+export function postSelect({ promptText, busyLevel }) {
   return fetchJson('/select', {
     method: 'POST',
     body: {
       prompt: { text: promptText },
       busy_level: busyLevel,
-      region_hint: regionHint,
     },
   })
 }

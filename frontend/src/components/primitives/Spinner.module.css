@@ -4,17 +4,9 @@
   border-radius: 50%;
   border-style: solid;
   border-width: 2px;
-  animation: spin 0.9s linear infinite;
-}
-
-.accent {
-  border-color: var(--color-accent-200);
-  border-top-color: var(--color-accent);
-}
-
-.inverse {
   border-color: rgba(255, 255, 255, 0.35);
   border-top-color: #fff;
+  animation: spin 0.9s linear infinite;
 }
 
 @keyframes spin {

@@ -7,17 +7,14 @@ import { ArrowIcon } from '../primitives/Icons'
 import { BusyLevelPicker } from './BusyLevelPicker'
 import styles from './InputScreen.module.css'
 
-const MAX_LENGTH = 500
-
 /** Landing screen: free-text prompt + busy-level pick + submit. */
 export function InputScreen() {
   const { state, setPromptText, setBusyLevel, submitPrompt } = useTripStateContext()
   const { promptText, busyLevel, selectMeta, selectStatus, selectError } = state
 
-  const charCount = promptText.length
   const trimmedLength = promptText.trim().length
   const tooShort = trimmedLength > 0 && trimmedLength < PROMPT_MIN_LENGTH
-  const submitDisabled = trimmedLength < PROMPT_MIN_LENGTH || charCount > MAX_LENGTH || selectStatus === 'pending'
+  const submitDisabled = trimmedLength < PROMPT_MIN_LENGTH || selectStatus === 'pending'
 
   return (
     <div className={styles.screen}>

@@ -6,7 +6,6 @@ import { ProgressBar } from '../primitives/ProgressBar'
 import { CloseIcon } from '../primitives/Icons'
 import styles from './MakeChangesPanel.module.css'
 
-const MAX_LENGTH = 500
 const SUBMIT_BUTTON_STYLE = { padding: '6px 14px', fontSize: '13px' }
 
 /**
@@ -18,10 +17,9 @@ export function MakeChangesPanel() {
   const { state, closeChanges, setChangesText, submitRefinement } = useTripStateContext()
   const { region, changesText, changesSubmitting, changesError, outOfRegionMessage } = state
 
-  const charCount = changesText.length
   const trimmedLength = changesText.trim().length
   const tooShort = trimmedLength > 0 && trimmedLength < PROMPT_MIN_LENGTH
-  const submitDisabled = trimmedLength < PROMPT_MIN_LENGTH || charCount > MAX_LENGTH || changesSubmitting
+  const submitDisabled = trimmedLength < PROMPT_MIN_LENGTH || changesSubmitting
 
   return (
     <div className={styles.panel}>
