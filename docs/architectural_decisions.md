@@ -18,9 +18,11 @@ I chose the above tech stack for the frontend because I'm very familiar with Rea
 ## Deployment
 
 Splitting frontend and backend into separate services means two deployments instead of one, but it keeps the concerns cleanly separated and mirrors how I'd actually structure a production system — a Python service owning data/AI logic, and a frontend consuming it over an API.
-- Frontend → Vercel or Netlify (static build)
-- Backend → Render, Railway, or Fly.io
-- CORS configured on FastAPI for the deployed frontend origin; frontend points at the deployed backend URL via an environment variable
+- Frontend → Vercel (static build), live at https://3-days-in-italy.vercel.app
+- Backend → Render (free-tier web service), live at https://three-days-in-italy-backend.onrender.com
+- CORS on FastAPI allows the deployed frontend's origin; the frontend points at the deployed backend URL via a `VITE_API_BASE_URL` env var
+
+**Why not Vercel for the backend too:** I initially deployed the FastAPI backend on Vercel as well, mainly for the simplicity of one platform. That didn't hold up in practice. Vercel's Python support runs as a per-request serverless function with an execution-time ceiling (the free tier caps around 10 seconds), but `/select` and `/refine` aren't quick lookups — they make a real round-trip to the Anthropic API, which can exceed that ceiling on a cold start. When it does, Vercel kills the connection mid-request rather than returning a normal error response, which surfaces to the user as a generic, unexplained "failed to fetch." Render runs the backend as a normal always-on process (the same `uvicorn` command as local dev), so there's no per-request duration limit to fight in the first place. The tradeoff is a free-tier spin-down after 15 minutes idle, which delays the first request after a gap by up to a minute rather than breaking it outright — a much safer failure mode for something a reviewer might open cold.
 
 ---
 

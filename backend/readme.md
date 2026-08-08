@@ -49,11 +49,26 @@ are at `http://localhost:8000/docs`.
 
 Request/response shapes are defined in `backend/models.py`.
 
+## Deployment
+
+Deployed on [Render](https://render.com) as a free-tier web service — see
+`render.yaml` at the repo root for the exact build/start commands
+(`pip install -r requirements.txt` / `uvicorn backend.main:app --host 0.0.0.0
+--port $PORT`). `requirements.txt` (also at the repo root) is what Render's
+build actually installs from; local dev still uses `uv`/`pyproject.toml`/
+`uv.lock` as described above, so keep both in sync if dependencies change.
+
+Vercel was tried first for the backend too, but its Python support runs as a
+per-request serverless function with an execution-time ceiling that the
+Anthropic API calls in `/select`/`/refine` can exceed on a cold start — see
+`docs/architectural_decisions.md` for the full reasoning behind switching to
+Render.
+
 ## Notes for local dev
 
-- CORS currently only allows `http://localhost:5173` (the frontend's Vite
-  dev server default) — update `backend/main.py` if you're running the
-  frontend elsewhere.
+- CORS allows `http://localhost:5173` (the frontend's Vite dev server
+  default) and the deployed frontend's origin — update `backend/main.py`'s
+  `allow_origins` if you're running the frontend somewhere else.
 - The dataset (`backend/data/italy.json`) is loaded, encoding-corrected, and
   validated once at startup — a malformed entry will fail fast rather than
   surfacing as a runtime error later.

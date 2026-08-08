@@ -77,6 +77,15 @@ Note: Vitest 4+ requires Node 20+; this project pins `vitest@^2` and
 `jsdom@^25` since local dev here runs Node 18. If you're on Node 20+, feel
 free to upgrade both.
 
+## Deployment
+
+Deployed on Vercel (static build) at https://3-days-in-italy.vercel.app.
+`VITE_API_BASE_URL` is set as a Vercel environment variable pointing at the
+deployed backend (Render — see the [backend README](../backend/readme.md)),
+the same mechanism described above for pointing local dev at a different
+backend. Since Vite bakes env vars in at build time, changing it requires a
+redeploy, not just a dashboard save.
+
 ## Notes for local dev
 
 - The dev server's default port (`5173`) is the one the backend's CORS config
