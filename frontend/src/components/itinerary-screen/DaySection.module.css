@@ -1,0 +1,30 @@
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 22px;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 28px;
+}
+
+.rail {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--color-divider);
+}

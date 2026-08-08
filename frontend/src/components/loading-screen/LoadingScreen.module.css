@@ -1,0 +1,24 @@
+.screen {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-8) var(--space-6);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 14vh;
+}
+
+.message {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: var(--font-heading-weight);
+  margin-bottom: var(--space-2);
+}
+
+.caption {
+  font-size: 13px;
+  color: rgba(var(--color-text-rgb), 0.55);
+  margin: 0 0 var(--space-4);
+}

@@ -1,0 +1,5 @@
+.hairline {
+  border: none;
+  border-top: 1px solid var(--color-divider);
+  margin: 0;
+}

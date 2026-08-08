@@ -1,0 +1,7 @@
+/* Self-hosted (no external runtime dependency) — headings use
+   Cormorant Garamond 600, body text uses Lora 400 (+ italic for the
+   subhead/reason text). */
+@import "@fontsource/cormorant-garamond/600.css";
+@import "@fontsource/cormorant-garamond/600-italic.css";
+@import "@fontsource/lora/400.css";
+@import "@fontsource/lora/400-italic.css";
