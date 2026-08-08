@@ -97,8 +97,10 @@ def llm_pick_region(user_prompt: str, available_regions: list[str]) -> str:
     """
     First LLM call (region-pick mode): given the user's free-text prompt and
     the distinct regions present in the dataset, pick exactly one region.
-    Only called when the frontend didn't already resolve a region_hint
-    via string-matching.
+    Only called as a fallback in select_places (routes.py) — after an
+    optional client-supplied region_hint and the backend's own code-only
+    string-match against known region names (find_single_confident_match)
+    have both failed to resolve one.
 
     Args:
         user_prompt (str): The traveler's free-text trip request.
