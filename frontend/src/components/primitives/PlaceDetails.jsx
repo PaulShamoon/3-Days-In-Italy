@@ -1,4 +1,4 @@
-import { Tag } from '../primitives/Tag'
+import { Tag } from './Tag'
 import styles from './PlaceDetails.module.css'
 
 const VARIANT_CLASS = {
@@ -7,14 +7,17 @@ const VARIANT_CLASS = {
 }
 
 /**
- * Place description + LLM reason, with an optional hours/seasonal/
- * booking tags row. Shared between the sidebar list-item's expanded
- * state ('inline' — appended below the card header, shows tags) and
- * the map marker popup ('popup' — standalone card, no tags row, per
- * the design doc).
+ * Place description + optional hours/seasonal/booking tags row + LLM
+ * reason (if present — itinerary places don't carry one, since that
+ * reasoning was specific to the selection/refine step). Shared across
+ * the map screen's sidebar list-item expanded state ('inline' —
+ * appended below the card header, shows tags), the map marker popup
+ * ('popup' — standalone card, no tags row, per the design doc), and the
+ * itinerary screen's timeline ('inline' — the same at-a-glance trip
+ * details a printed PDF needs to be useful during the actual trip).
  *
  * Args:
- *   place (object): A merged WorkingPlace.
+ *   place (object): A merged WorkingPlace or plain Place.
  *   variant ('inline'|'popup'): Which context this is rendered in. Defaults to 'inline'.
  */
 export function PlaceDetails({ place, variant = 'inline' }) {
@@ -30,7 +33,7 @@ export function PlaceDetails({ place, variant = 'inline' }) {
           {place.booking_required && <Tag variant="outline">Booking required</Tag>}
         </div>
       )}
-      <p className={styles.reason}>&ldquo;{place.reason}&rdquo;</p>
+      {place.reason && <p className={styles.reason}>&ldquo;{place.reason}&rdquo;</p>}
     </div>
   )
 }
