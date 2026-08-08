@@ -1,5 +1,8 @@
 import { useEffect, useMemo } from 'react'
-import { MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet'
+import { MapContainer, ZoomControl, useMap } from 'react-leaflet'
+import { useTripStateContext } from '../../state/TripStateContext'
+import { OsmTileLayer } from '../primitives/OsmTileLayer'
+import { FlyToActivePlace } from '../primitives/FlyToActivePlace'
 import { PlaceMarker } from './PlaceMarker'
 import styles from './TripMap.module.css'
 
@@ -33,7 +36,12 @@ function FitBounds({ bounds }) {
  *   places (Array<object>): Merged WorkingPlace[] to plot.
  */
 export function TripMap({ places }) {
-  const bounds = useMemo(() => places.map((place) => [place.latitude, place.longitude]), [places])
+  const { state } = useTripStateContext()
+  const points = useMemo(
+    () => places.map((place) => ({ id: place.id, position: [place.latitude, place.longitude] })),
+    [places]
+  )
+  const bounds = useMemo(() => points.map((point) => point.position), [points])
 
   if (places.length === 0) {
     return <div className={styles.map} />
@@ -47,12 +55,10 @@ export function TripMap({ places }) {
         zoomControl={false}
         className={styles.container}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
+        <OsmTileLayer />
         <ZoomControl position="topleft" />
         <FitBounds bounds={bounds} />
+        <FlyToActivePlace points={points} activePlaceId={state.activePlaceId} />
         {places.map((place) => (
           <PlaceMarker key={place.id} place={place} />
         ))}

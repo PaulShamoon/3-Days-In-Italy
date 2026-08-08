@@ -1,7 +1,7 @@
 import { useTripStateContext } from '../../state/TripStateContext'
 import { formatType } from '../../utils/formatPlace'
 import { CloseIcon } from '../primitives/Icons'
-import { PlaceDetails } from './PlaceDetails'
+import { PlaceDetails } from '../primitives/PlaceDetails'
 import { RemoveConfirm } from './RemoveConfirm'
 import styles from './PlaceListItem.module.css'
 
