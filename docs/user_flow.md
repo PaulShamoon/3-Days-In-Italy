@@ -2,7 +2,7 @@
 
 **Stack:** React (Vite) frontend + FastAPI (Python) backend
 **Trip length:** Fixed at 3 days (not user-configurable)
-**Prompt limit:** 500 characters, enforced on frontend and backend
+**Prompt limit:** 15-500 characters, enforced on frontend and backend
 
 ---
 
@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart TD
-    A[Landing: prompt input + busy level picker] --> B{Region mentioned in prompt?}
+    A[Landing: prompt input + busy level picker] --> B{Region named literally in prompt?}
     B -- Yes --> C[Filter dataset to matched region - code only]
     B -- No --> D[LLM picks one region from dataset]
     D --> C
@@ -24,15 +24,14 @@ flowchart TD
     J --> I
     I -- "X a pin" --> K[Drop place - client-side only]
     K --> I
-    I -- "Make Changes" --> L[Prompt box reappears - 500 char limit]
-    L --> M{New prompt references\nout-of-region place?}
-    M -- Yes --> N["Show message: That's outside your selected\nregion - switch regions instead?"]
-    N -- User confirms switch --> D
-    N -- User declines --> I
+    I -- "Make Changes" --> L[Prompt box reappears - 15-500 char limit]
+    L --> M{New prompt resolves to a\nregion/city/landmark outside the locked region?}
+    M -- Yes --> N["Show message: That's outside your selected\nregion - start a new trip if you want it"]
+    N --> I
     M -- No --> O[LLM Call #2: Refine Selection\nsame schema/validation, region-locked]
     O --> H
     I -- "Approve" --> P{Enough places remain for\n3-day / busy-level minimum?}
-    P -- No --> Q["Approve disabled + message:\nYou'll need at least N places"]
+    P -- No --> Q["Approve disabled + message:\nAdd N more places to approve"]
     Q --> I
     P -- Yes --> R[Generate Itinerary - code only, no LLM]
     R --> S[Day-cluster by proximity within\nbusy-level per-day cap]
@@ -47,7 +46,7 @@ flowchart TD
 
 ### 1. Landing / Prompt Input
 - Free-text box: trip vibes, interests, place types (e.g. *"relaxing coastal trip, love local food, into wine and quiet towns, not really a museum person"*)
-- **500 character limit**, enforced with a live counter (e.g. `342/500`); submit disabled past the limit
+- **15-500 character limit**, enforced with a live counter (e.g. `342/500`) and a "tell us a bit more" hint below the minimum; submit disabled outside that range
 - Busy-level picker (single select):
   | Level | Places/day | Total (3 days) |
   |---|---|---|
@@ -57,9 +56,9 @@ flowchart TD
 - Trip length is fixed at 3 days — not shown as a user input
 
 ### 2. Region Resolution (pre-LLM, code-only)
-- Backend checks prompt text against known cities/regions in `italy.json`
+- Backend checks the initial prompt text against known **region names** in `italy.json` (not cities or landmarks at this step)
 - Match found → filter dataset to that region immediately, no LLM call
-- No match (pure vibe text) → LLM's first job is picking one region from the distinct regions present in the data
+- No match (vibe text, or a city/landmark mentioned instead of a region) → LLM's first job is picking one region from the distinct regions present in the data
 - Either path: region is **locked in code** before place selection runs — never enforced by prompt instruction alone
 
 ### 3. Place Selection — LLM Call #1
@@ -74,13 +73,13 @@ flowchart TD
 
 ### 5. Review / Edit Loop
 - **X a pin** → drop it from the working set (client-side state only, no LLM call)
-- **Make Changes** → prompt box reappears (same 500-char limit) → new prompt text + current place ID list + region-lock context sent to backend
-  - **Out-of-region check:** if the new prompt references a place/area outside the locked region, don't silently drop it — show *"That's outside your selected region (Tuscany) — want to switch regions instead?"* Confirming switches regions and restarts selection from Step 2 with the new region.
+- **Make Changes** → prompt box reappears (same 15-500 char limit) → new prompt text + current place ID list + region-lock context sent to backend
+  - **Out-of-region check:** unlike Step 2's region-name-only check, this one escalates through region name → city name → every place name in the full (all-region) dataset, so a city ("add the Colosseum in Rome") or a bare landmark ("add the Colosseum") is caught, not just an explicit region name. If it resolves to a region other than the locked one, don't silently drop the request — show *"That's outside your selected region (Tuscany). If you would like to switch to Lazio instead, please start a new trip."* There's no in-place "switch region" action; the user restarts manually if they want it.
   - Otherwise → **LLM Call #2** (same schema, same ID validation), region-lock passed as an explicit hard instruction, not implied context
 - Loop as many times as needed
 
 ### 6. Approve → Itinerary Generation (code-only, no LLM)
-- **Minimum-count gate:** if the remaining places can't fill 3 days at the chosen busy level, Approve is disabled with a message like *"You'll need at least 18 places for a 3-day Packed trip — add more before approving."*
+- **Minimum-count gate:** if the remaining places can't fill 3 days at the chosen busy level, Approve is disabled with a message like *"Add 2 more places to approve"* (`selectApproveGate` computes the current count and required minimum; the header renders the gap between them).
 - Day-clustering by proximity, respecting the busy-level per-day place cap
 - Nearest-neighbor ordering within each day
 - Soft warning badges for hours-overlap conflicts between neighboring places (no hard rejection)
@@ -94,5 +93,6 @@ flowchart TD
 - Busy level defines **place count per day**, not hour budgets
 - Region is chosen once (by user text or LLM) and **locked in code** for the rest of the session
 - Itinerary generation is **fully deterministic** — no LLM call, to keep feasibility math reliable
-- Prompt limit: **500 characters**, validated on both frontend and backend
+- Prompt limit: **15-500 characters**, validated on both frontend and backend
 - Same prompt-input component/validator reused for both initial input and refinement input
+- Out-of-region requests during refinement surface a message and require the user to manually start a new trip — there is no automatic "switch region" action
