@@ -20,7 +20,7 @@ export function ItineraryScreen() {
   return (
     <div className={styles.screen}>
       <ItineraryHeader placeCount={placeCount} />
-      <ItineraryOverviewMap days={days} activePlaceId={activePlaceId} />
+      <ItineraryOverviewMap days={days} activePlaceId={activePlaceId} onSelectPlace={selectPlace} />
       {days.map((day, index) => (
         <DaySection
           key={day.day_number}

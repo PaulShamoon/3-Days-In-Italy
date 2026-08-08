@@ -14,13 +14,16 @@ import styles from './ItineraryOverviewMap.module.css'
  * there's no separate legend here — the timeline below already labels
  * each color as "Day N". No popups — the interactive map with full
  * place details is the map screen's TripMap, already reviewed before
- * Approve.
+ * Approve. Clicking a pin selects it (same activePlaceId as clicking a
+ * timeline entry), highlighting the matching place in its day's list —
+ * mirroring the map screen's pin-to-list sync.
  *
  * Args:
  *   days (Array<object>): ItineraryResponse.days.
- *   activePlaceId (string | null): The currently selected place's id (from a timeline click), if any.
+ *   activePlaceId (string | null): The currently selected place's id (from a timeline click or pin click), if any.
+ *   onSelectPlace (function): Called with a place's id when its pin is clicked.
  */
-export function ItineraryOverviewMap({ days, activePlaceId }) {
+export function ItineraryOverviewMap({ days, activePlaceId, onSelectPlace }) {
   const points = useMemo(
     () =>
       days.flatMap((day, dayIndex) =>
@@ -50,7 +53,12 @@ export function ItineraryOverviewMap({ days, activePlaceId }) {
         <ZoomControl position="topleft" />
         <FlyToActivePlace points={points} activePlaceId={activePlaceId} />
         {points.map((point) => (
-          <Marker key={point.id} position={point.position} icon={createDayMarkerIcon(point.number, point.color)} />
+          <Marker
+            key={point.id}
+            position={point.position}
+            icon={createDayMarkerIcon(point.number, point.color)}
+            eventHandlers={{ click: () => onSelectPlace(point.id) }}
+          />
         ))}
       </MapContainer>
     </div>
