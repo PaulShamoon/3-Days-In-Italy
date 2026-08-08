@@ -88,8 +88,8 @@ See [`backend/readme.md`](backend/readme.md) for backend-specific notes
 # Backend test suite
 uv run pytest backend/
 
-# Frontend lint
-cd frontend && npm run lint
+# Frontend unit tests (state machine, selectors, utils) + lint
+cd frontend && npm run test && npm run lint
 ```
 
 ## Project structure
