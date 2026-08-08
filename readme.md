@@ -9,6 +9,15 @@ a map to go with it.
   Anthropic API, plus a fully deterministic (no-LLM) itinerary builder.
 - **Frontend:** React (Vite) — real `react-leaflet`/OpenStreetMap map, no mock data.
 
+## Live demo
+
+**[3-days-in-italy.vercel.app](https://3-days-in-italy.vercel.app)**
+
+The backend runs on Render's free tier, which spins down after 15 minutes of
+inactivity — if the site's been idle, the first prompt submission can take up
+to a minute to respond while it wakes back up. It's not broken, just cold;
+subsequent requests are fast.
+
 ## How it works
 
 1. **Describe your trip.** Free-text prompt + a busy-level pick (Chill / Busy /
