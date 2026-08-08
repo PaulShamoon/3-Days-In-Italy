@@ -11,7 +11,8 @@ Organized in four groups:
 from enum import Enum
 from pydantic import (
     BaseModel,
-    Field
+    Field,
+    field_validator
 )
 
 class Place(BaseModel):
@@ -69,11 +70,38 @@ class SelectedPlace(BaseModel):
     reason: str
 
 
+# Minimum (whitespace-stripped) prompt length
+PROMPT_MIN_LENGTH = 15
+
+
 class PromptText(BaseModel):
     """Reusable prompt field with the shared 500-character limit, enforced
-    server side regardless of frontend validation"""
+    server side regardless of frontend validation. Also requires
+    PROMPT_MIN_LENGTH non-whitespace-padded characters — a bare min_length=1
+    lets something meaningless like "the" through, giving the LLM nothing to
+    actually work from."""
 
     text: str = Field(..., max_length=500, min_length=1)
+
+    @field_validator("text")
+    @classmethod
+    def _require_meaningful_length(cls, value: str) -> str:
+        """Strips whitespace, then enforces PROMPT_MIN_LENGTH on what's
+        left — declarative Field(min_length=...) alone would count
+        whitespace padding, letting something like "   the   " through.
+
+        Args:
+            value (str): The raw, unvalidated "text" field value.
+
+        Returns:
+            The whitespace-stripped value, stored in place of the raw input.
+        """
+        stripped = value.strip()
+        if len(stripped) < PROMPT_MIN_LENGTH:
+            raise ValueError(
+                f"Tell us a bit more — at least {PROMPT_MIN_LENGTH} characters."
+            )
+        return stripped
 
 
 # GET /places
