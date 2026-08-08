@@ -145,7 +145,19 @@ export function tripReducer(state, action) {
       return { ...state, itineraryStatus: 'pending', itineraryError: null }
 
     case ACTION_TYPES.ITINERARY_SUCCEEDED:
-      return { ...state, stage: 'itinerary', itineraryStatus: 'idle', itinerary: action.payload.days }
+      // Also closes the make-changes panel if it was left open — otherwise
+      // it silently reappears open the next time the user returns to the
+      // map screen via "Edit selection", without them reopening it.
+      return {
+        ...state,
+        stage: 'itinerary',
+        itineraryStatus: 'idle',
+        itinerary: action.payload.days,
+        changesOpen: false,
+        changesText: '',
+        changesError: null,
+        outOfRegionMessage: null,
+      }
 
     case ACTION_TYPES.ITINERARY_FAILED:
       return { ...state, itineraryStatus: 'error', itineraryError: action.payload.error }

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTripStateContext } from '../../state/TripStateContext'
 import { selectWorkingPlaces } from '../../state/selectors'
 import { MapScreenHeader } from './MapScreenHeader'
@@ -12,7 +13,13 @@ import styles from './MapScreen.module.css'
  */
 export function MapScreen() {
   const { state } = useTripStateContext()
-  const places = selectWorkingPlaces(state)
+  // Memoized so `places` only gets a new identity when the selection or
+  // catalog actually changes, not on every unrelated re-render (e.g.
+  // clicking a marker) — TripMap depends on this identity to know when
+  // to re-fit the map's bounds. Deps are deliberately narrower than
+  // `state` — selectWorkingPlaces only ever reads these two fields.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const places = useMemo(() => selectWorkingPlaces(state), [state.selection, state.placeCatalog])
 
   return (
     <div className={styles.screen}>

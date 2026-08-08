@@ -1,4 +1,4 @@
-import { useCallback, useReducer } from 'react'
+import { useCallback, useReducer, useRef } from 'react'
 import { tripReducer, initialState } from './tripReducer'
 import * as actions from './tripActions'
 import { postSelect, postRefine } from '../api/selectionApi'
@@ -17,7 +17,15 @@ import { getPlaces } from '../api/placesApi'
 export function useTripState() {
   const [state, dispatch] = useReducer(tripReducer, initialState)
 
+  // Bumped by restartTrip so any async action already in flight from
+  // before the restart can tell its response is stale once it resolves
+  // and skip dispatching — otherwise a slow /select+/places or
+  // /refine/itinerary chain can land after the user has already reset
+  // and silently drag them back into the trip they just abandoned.
+  const epochRef = useRef(0)
+
   const submitPrompt = useCallback(async () => {
+    const epoch = epochRef.current
     dispatch(actions.selectPending())
 
     let selectResponse
@@ -27,10 +35,11 @@ export function useTripState() {
         busyLevel: state.busyLevel,
       })
     } catch (error) {
-      dispatch(actions.selectFailed(error.message))
+      if (epochRef.current === epoch) dispatch(actions.selectFailed(error.message))
       return
     }
 
+    if (epochRef.current !== epoch) return
     dispatch(actions.selectSucceeded(selectResponse))
     if (selectResponse.insufficient_matches) return
 
@@ -41,13 +50,15 @@ export function useTripState() {
       placesResponse.places.forEach((place) => {
         placeCatalog[place.id] = place
       })
+      if (epochRef.current !== epoch) return
       dispatch(actions.placesSucceeded(placeCatalog))
     } catch (error) {
-      dispatch(actions.placesFailed(error.message))
+      if (epochRef.current === epoch) dispatch(actions.placesFailed(error.message))
     }
   }, [state.promptText, state.busyLevel])
 
   const submitRefinement = useCallback(async () => {
+    const epoch = epochRef.current
     dispatch(actions.refinePending())
     try {
       const response = await postRefine({
@@ -57,28 +68,36 @@ export function useTripState() {
         busyLevel: state.busyLevel,
       })
 
+      if (epochRef.current !== epoch) return
       if (response.out_of_region_request) {
         dispatch(actions.refineOutOfRegion(response.out_of_region_message))
       } else {
         dispatch(actions.refineSucceeded(response.selected))
       }
     } catch (error) {
-      dispatch(actions.refineFailed(error.message))
+      if (epochRef.current === epoch) dispatch(actions.refineFailed(error.message))
     }
   }, [state.changesText, state.region, state.selection, state.busyLevel])
 
   const approveItinerary = useCallback(async () => {
+    const epoch = epochRef.current
     dispatch(actions.itineraryPending())
     try {
       const response = await postItinerary({
         placeIds: state.selection.map((selected) => selected.id),
         busyLevel: state.busyLevel,
       })
+      if (epochRef.current !== epoch) return
       dispatch(actions.itinerarySucceeded(response.days))
     } catch (error) {
-      dispatch(actions.itineraryFailed(error.message))
+      if (epochRef.current === epoch) dispatch(actions.itineraryFailed(error.message))
     }
   }, [state.selection, state.busyLevel])
+
+  const restartTrip = useCallback(() => {
+    epochRef.current += 1
+    dispatch(actions.tripRestarted())
+  }, [])
 
   return {
     state,
@@ -95,6 +114,6 @@ export function useTripState() {
     submitRefinement,
     approveItinerary,
     backToMap: () => dispatch(actions.backToMap()),
-    restartTrip: () => dispatch(actions.tripRestarted()),
+    restartTrip,
   }
 }
