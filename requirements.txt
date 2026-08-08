@@ -1,0 +1,6 @@
+fastapi
+pydantic>=2.0
+uvicorn[standard]
+anthropic
+haversine>=2.9.0
+python-dotenv>=1.2.2
