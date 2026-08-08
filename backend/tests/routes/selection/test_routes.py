@@ -11,6 +11,20 @@ def _client(places):
 
 
 class TestSelectRoute:
+    def test_rejects_prompt_below_minimum_length(self, make_place):
+        places = [make_place(id="place_001", region="Tuscany")]
+
+        with patch("backend.routes.selection.routes.llm_pick_region") as mock_pick, \
+             patch("backend.routes.selection.routes.llm_select_places") as mock_select:
+            response = _client(places).post("/select", json={
+                "prompt": {"text": "the"},
+                "busy_level": "chill",
+            })
+
+        assert response.status_code == 422
+        mock_pick.assert_not_called()
+        mock_select.assert_not_called()
+
     def test_valid_region_hint_skips_region_resolution(self, make_place):
         places = [make_place(id=f"place_{i:03d}", region="Tuscany") for i in range(1, 7)]
         selections = [{"id": p.id, "reason": "fits"} for p in places]
@@ -68,7 +82,7 @@ class TestSelectRoute:
 
         with patch("backend.routes.selection.routes.llm_select_places", return_value=selections):
             response = _client(places).post("/select", json={
-                "prompt": {"text": "wine"},
+                "prompt": {"text": "wine and quiet historic towns"},
                 "busy_level": "chill",
                 "region_hint": "Tuscany",
             })
@@ -84,7 +98,7 @@ class TestSelectRoute:
 
         with patch("backend.routes.selection.routes.llm_select_places", return_value=selections):
             response = _client(places).post("/select", json={
-                "prompt": {"text": "wine"},
+                "prompt": {"text": "wine and quiet historic towns"},
                 "busy_level": "busy",
                 "region_hint": "Tuscany",
             })
@@ -103,7 +117,7 @@ class TestSelectRoute:
 
         with patch("backend.routes.selection.routes.llm_select_places", return_value=selections):
             response = _client(places).post("/select", json={
-                "prompt": {"text": "wine"},
+                "prompt": {"text": "wine and quiet historic towns"},
                 "busy_level": "chill",
                 "region_hint": "Tuscany",
             })
@@ -114,6 +128,20 @@ class TestSelectRoute:
 
 
 class TestRefineRoute:
+    def test_rejects_prompt_below_minimum_length(self, make_place):
+        places = [make_place(id="place_001", region="Tuscany")]
+
+        with patch("backend.routes.selection.routes.llm_refine_places") as mock_refine:
+            response = _client(places).post("/refine", json={
+                "prompt": {"text": "add wine"},
+                "locked_region": "Tuscany",
+                "current_place_ids": ["place_001"],
+                "busy_level": "chill",
+            })
+
+        assert response.status_code == 422
+        mock_refine.assert_not_called()
+
     def test_out_of_region_request_skips_llm_call(self, make_place):
         places = [
             make_place(id="place_001", region="Tuscany"),
