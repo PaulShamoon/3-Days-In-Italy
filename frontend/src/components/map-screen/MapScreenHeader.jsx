@@ -14,8 +14,9 @@ import styles from './MapScreenHeader.module.css'
  */
 export function MapScreenHeader({ places }) {
   const { state, openChanges, approveItinerary } = useTripStateContext()
-  const { canApprove } = selectApproveGate(state)
+  const { canApprove, currentCount, requiredMinimum } = selectApproveGate(state)
   const busyMeta = BUSY_LEVEL_META[state.busyLevel]
+  const placesNeeded = requiredMinimum - currentCount
 
   return (
     <div className={styles.header}>
@@ -26,19 +27,26 @@ export function MapScreenHeader({ places }) {
         </Tag>
         <span className={styles.count}>{places.length} places matched</span>
       </div>
-      <div className={styles.actions}>
-        <Button variant="secondary" onClick={openChanges}>
-          Make changes
-        </Button>
-        <Button
-          variant="primary"
-          disabled={!canApprove}
-          loading={state.itineraryStatus === 'pending'}
-          onClick={approveItinerary}
-        >
-          Approve
-          <CheckIcon />
-        </Button>
+      <div className={styles.actionsColumn}>
+        <div className={styles.actions}>
+          <Button variant="secondary" onClick={openChanges}>
+            Make changes
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!canApprove}
+            loading={state.itineraryStatus === 'pending'}
+            onClick={approveItinerary}
+          >
+            Approve
+            <CheckIcon />
+          </Button>
+        </div>
+        {!canApprove && (
+          <span className={styles.approveHint}>
+            Add {placesNeeded} more place{placesNeeded === 1 ? '' : 's'} to approve
+          </span>
+        )}
       </div>
     </div>
   )

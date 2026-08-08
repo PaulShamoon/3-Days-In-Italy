@@ -43,13 +43,13 @@ The brief calls out that the dataset is intentionally messy (seasonal hours, inc
 # Region Locking
 
 A single trip is locked to one region, enforced in code rather than left to the LLM's judgment:
-- If the user's prompt names a city/region, the dataset is filtered immediately, with no LLM call needed for this step.
-- If the prompt is vibe-only, the LLM's first job is picking one region from the distinct regions present in the data.
+- If the user's initial prompt names a region directly, the dataset is filtered immediately, with no LLM call needed for this step.
+- If the prompt is vibe-only (or names something other than a region), the LLM's first job is picking one region from the distinct regions present in the data.
 - Either way, the resulting region is used to filter the dataset in code before any place-selection call runs.
 
 I made this an explicit code-level constraint rather than a prompt instruction because it's a hard requirement (Italy is too large to cross day-to-day in a 3-day trip), and hard requirements should be enforced structurally, not requested from the model. The same lock is passed as an explicit instruction (not just implied context) during the refinement step, since models are more reliable at honoring stated constraints than inferred ones.
 
-**Out-of-region requests during refinement:** if a "make changes" prompt references a place outside the locked region, the system does not silently drop it. Instead, it surfaces the conflict to the user and offers to switch regions, which restarts selection with the new region. Silently ignoring the request would look like a bug; an explicit message is a small amount of extra work for meaningfully better UX.
+**Out-of-region requests during refinement:** a region-name-only check isn't enough here — a refinement prompt is far more likely to name a city ("add the Colosseum in Rome") or a bare landmark ("add the Colosseum") than a region outright, and neither would trip a region-name check. So `/refine`'s out-of-region guard escalates in order of specificity — region name, then city name, then every place name in the full (all-region) dataset — and resolves whichever one confidently matches back to its region. If that resolves to a region other than the locked one, the request isn't silently dropped or complied with: the response surfaces the conflict with a message telling the user to start a new trip if they want that region instead. There's no automatic "switch region and restart" — auto-switching would discard the user's current selection without confirmation, so the decision is deliberately left to the user rather than building a confirm-and-restart flow for it. This code-only pass is also a best-effort guard, not a substitute for the region-lock instruction the LLM call still receives — a landmark the dataset doesn't itself contain can still slip through.
 
 ---
 
@@ -68,6 +68,8 @@ Once a fixed set of places is approved, generating the final day-by-day itinerar
 # Input Validation
 
 The prompt input (both initial and refinement) is capped at 500 characters. I chose a character limit over a word limit because word count is a poor proxy for actual token usage — a handful of very long words can cost as much as many short ones, while character count maps much more directly to LLM cost and context size. The limit is enforced identically on both ends: client-side for immediate feedback (a live counter, disabled submit), and server-side via a Pydantic field validator, since a client-only limit can be bypassed by anyone calling the API directly.
+
+There's also a 15-character (whitespace-stripped) minimum on both prompts. A bare `min_length=1` lets something meaningless like "the" through, which hands the LLM nothing to actually select or refine against — rather than let the model guess at a near-empty prompt, the request is rejected before it reaches the LLM at all. 15 characters is deliberately low: enough to rule out throwaway input without feeling like a real constraint on genuine (if terse) requests like "add more wine bars." It's enforced the same way as the max — client-side gating plus a server-side Pydantic validator, which strips whitespace before counting so padding can't be used to sneak a short prompt past the check.
 
 ---
 
