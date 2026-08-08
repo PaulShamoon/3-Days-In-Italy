@@ -37,7 +37,7 @@ flowchart TD
     R --> S[Day-cluster by proximity within\nbusy-level per-day cap]
     S --> T[Nearest-neighbor order within each day]
     T --> U[Soft warning badges for hours-overlap conflicts]
-    U --> V[Final itinerary view: day-by-day,\nordered, with times/pins]
+    U --> V[Final itinerary view: day-by-day,\nnumbered/colored pins on an interactive map,\nfull place details, per-day directions link]
 ```
 
 ---
@@ -83,7 +83,11 @@ flowchart TD
 - Day-clustering by proximity, respecting the busy-level per-day place cap
 - Nearest-neighbor ordering within each day
 - Soft warning badges for hours-overlap conflicts between neighboring places (no hard rejection)
-- Final view: day-by-day itinerary, ordered, with times/pins
+- **Final view:**
+  - An interactive overview map (zoomable/pannable, like the map screen) with one numbered pin per place, colored by day. Each day's timeline list uses the same color/number on its own dots, so pins and list entries cross-reference directly — no separate legend needed.
+  - Clicking a pin or a timeline entry selects it: the matching timeline entry highlights, and the map flies to that place (zooming in at least to street level if it isn't already), in either direction.
+  - Each day has one "Directions" link (not one per place) that opens Google Maps with the whole day as a route — first place as the origin, last as the destination, everything between as waypoints, in visit order.
+  - Full place details — description, hours, seasonal notes, booking requirement — are shown inline for every place, always visible rather than click-to-expand, since **Export PDF** (`window.print()`) captures whatever's on the page, and this is what people actually reference during the trip.
 
 ---
 
