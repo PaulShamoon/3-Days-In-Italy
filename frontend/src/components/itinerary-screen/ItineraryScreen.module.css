@@ -1,0 +1,7 @@
+.screen {
+  width: 100%;
+  max-width: 840px;
+  padding: var(--space-6) var(--space-6) var(--space-8);
+  box-sizing: border-box;
+  animation: fadeUp 0.4s ease both;
+}

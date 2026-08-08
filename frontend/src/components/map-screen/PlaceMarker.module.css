@@ -1,0 +1,46 @@
+:global(.leaflet-popup-content-wrapper) {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+:global(.leaflet-popup-content) {
+  width: 240px !important;
+  margin: var(--space-3) !important;
+}
+
+.popup {
+  position: relative;
+  text-align: left;
+}
+
+.close {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: rgba(var(--color-text-rgb), 0.4);
+  line-height: 0;
+  padding: 2px;
+}
+
+.close:hover {
+  color: var(--color-accent-700);
+}
+
+.name {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: var(--font-heading-weight);
+  margin-bottom: 2px;
+  padding-right: 14px;
+}
+
+.meta {
+  font-size: 11px;
+  color: rgba(var(--color-text-rgb), 0.5);
+  margin-bottom: 6px;
+  text-transform: capitalize;
+}

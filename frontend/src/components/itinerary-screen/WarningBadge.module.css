@@ -1,0 +1,22 @@
+.badge {
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-accent-200);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-100);
+}
+
+.icon {
+  font-size: 12px;
+  color: var(--color-accent-700);
+  flex: none;
+}
+
+.message {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-accent-700);
+}
