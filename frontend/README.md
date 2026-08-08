@@ -40,6 +40,7 @@ npm run dev       # dev server with HMR
 npm run build     # production build to dist/
 npm run preview   # serve the production build locally
 npm run lint      # eslint
+npm run test      # vitest — state/reducer/selector/utils unit tests
 ```
 
 ## Project structure
@@ -64,9 +65,19 @@ src/
 
 Every non-trivial component has a co-located `.module.css` file.
 
+## Testing
+
+`npm run test` runs the [Vitest](https://vitest.dev/) suite — unit tests for
+the state machine (`tripReducer`, `useTripState`'s async orchestration) and
+pure logic (`selectors`, `utils/`). No component/DOM rendering tests; UI
+components are covered by manual verification instead. `useTripState.test.js`
+mocks the `api/` layer with `vi.mock`, so no backend needs to be running.
+
+Note: Vitest 4+ requires Node 20+; this project pins `vitest@^2` and
+`jsdom@^25` since local dev here runs Node 18. If you're on Node 20+, feel
+free to upgrade both.
+
 ## Notes for local dev
 
 - The dev server's default port (`5173`) is the one the backend's CORS config
   allows by default — if you change it, update `backend/main.py` too.
-- No test suite on the frontend side (backend has the pytest suite); `npm run
-  lint` is the only automated check.
