@@ -1,9 +1,50 @@
-import { useCallback, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { tripReducer, initialState } from './tripReducer'
 import * as actions from './tripActions'
 import { postSelect, postRefine } from '../api/selectionApi'
 import { postItinerary } from '../api/itineraryApi'
 import { getPlaces } from '../api/placesApi'
+
+const STORAGE_KEY = 'tripState'
+
+// Only the actual trip data is persisted — in-flight statuses/errors and
+// modal/panel-open flags are excluded so a reload can't resurrect a stuck
+// "pending" spinner or a make-changes panel hanging open with no request
+// actually in flight.
+const PERSISTED_KEYS = [
+  'stage',
+  'promptText',
+  'busyLevel',
+  'region',
+  'selectMeta',
+  'selection',
+  'placeCatalog',
+  'activePlaceId',
+  'itinerary',
+]
+
+function loadPersistedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return initialState
+    return { ...initialState, ...JSON.parse(raw) }
+  } catch {
+    return initialState
+  }
+}
+
+function persistState(state) {
+  const toPersist = {}
+  PERSISTED_KEYS.forEach((key) => {
+    toPersist[key] = state[key]
+  })
+  // 'loading' only means "a request is in flight" — with nothing in
+  // flight after a fresh page load, it has to fall back to 'input' or
+  // the user gets stuck looking at a permanent spinner.
+  if (toPersist.stage === 'loading') toPersist.stage = 'input'
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist))
+}
 
 /**
  * Owns the trip-planning state machine (via tripReducer) and every
@@ -15,7 +56,11 @@ import { getPlaces } from '../api/placesApi'
  *   object: { state, ...action dispatcher functions }.
  */
 export function useTripState() {
-  const [state, dispatch] = useReducer(tripReducer, initialState)
+  const [state, dispatch] = useReducer(tripReducer, undefined, loadPersistedState)
+
+  useEffect(() => {
+    persistState(state)
+  }, [state])
 
   // Bumped by restartTrip so any async action already in flight from
   // before the restart can tell its response is stale once it resolves
