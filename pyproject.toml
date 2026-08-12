@@ -9,6 +9,7 @@ dependencies = [
     "anthropic",
     "haversine>=2.9.0",
     "python-dotenv>=1.2.2",
+    "stripe>=15.4.0"
 ]
 
 [tool.uv]
