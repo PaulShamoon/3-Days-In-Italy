@@ -3,8 +3,7 @@
 A trip planner that turns a free-text prompt ("relaxing coastal trip, love local
 food, into wine and quiet towns, not really a museum person") into a real,
 day-by-day 3-day Italy itinerary — one region, a hand-picked set of places, and
-a map to go with it.
-
+a map to go with it. This is a take home project as part of the Stripe interview process.
 - **Backend:** FastAPI (Python) — LLM-driven place selection/refinement via the
   Anthropic API, plus a fully deterministic (no-LLM) itinerary builder.
 - **Frontend:** React (Vite) — real `react-leaflet`/OpenStreetMap map, no mock data.
